@@ -31,8 +31,8 @@
 .board-wrap { position: relative; }
 .rules-btn { align-self: center; font-size: 13px; padding: 4px 14px; }
 .ctrl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.ctrl button { padding-inline: 4px; }
-.hint-btn { font-size: 14px; line-height: 1.3; }
+/* 3つのボタンの幅はいつも同じ。文字の長さで変わらない */
+.ctrl button { min-width: 0; padding-inline: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .rules { margin: 0; padding-left: 1.2em; font-size: 13px; line-height: 1.75; color: var(--mute); }
 
 /* 遊ぶ画面は1画面に収め、スクロールしない(js/app.js が html に .fixed-screen をつける) */

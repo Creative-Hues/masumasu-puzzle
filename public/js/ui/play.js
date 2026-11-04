@@ -40,7 +40,7 @@ export function playScreen(root, { store, go }, entry) {
       <div class="ctrl">
         <button data-act="undo">1手戻す</button>
         <button data-act="reset">最初から</button>
-        <button data-act="hint" class="hint-btn"></button>
+        <button data-act="hint"></button>
       </div>
       <button class="text rules-btn" data-act="rules">ルール</button>
     </div>
@@ -72,7 +72,7 @@ export function playScreen(root, { store, go }, entry) {
     btn('undo').disabled = busy || !inst || !inst.canUndo();
     btn('reset').disabled = busy || !inst;
     btn('hint').disabled = busy || !inst;
-    btn('hint').textContent = hints.exhausted ? 'このステージを飛ばす' : 'ヒント';
+    btn('hint').textContent = hints.exhausted ? '飛ばす' : 'ヒント';
     $('.hints-left').textContent = hints.left;
   }
 
