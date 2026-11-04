@@ -21,9 +21,10 @@
 
 import * as trial from './trial/trial.js';
 import * as majikiri from './majikiri/majikiri.js';
+import * as nobishiro from './nobishiro/nobishiro.js';
 
 export const PUZZLES = [
-  { id: 'nobishiro', name: 'のびしろ', tagline: '色を伸ばす。', game: trial },
+  { id: 'nobishiro', name: 'のびしろ', tagline: '色を伸ばす。', game: nobishiro },
   { id: 'majikiri', name: 'まじきり', tagline: '部屋を区切る。', game: majikiri },
   { id: 'yotsutsuji', name: 'よつつじ', tagline: '線をつなぐ。', game: trial },
   { id: 'utsushie', name: 'うつしえ', tagline: '形を映す。', game: trial },

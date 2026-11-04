@@ -154,3 +154,33 @@ html.fixed-screen #app { height: 100%; }
 .mj-line.hint.h { background: repeating-linear-gradient(to right, var(--accent) 0 10px, transparent 10px 16px); }
 .mj-line.hint.v { background: repeating-linear-gradient(to bottom, var(--accent) 0 10px, transparent 10px 16px); }
 @keyframes mj-blink { 50% { opacity: .2; } }
+
+/* のびしろ */
+.nb-dots { display: flex; justify-content: center; gap: 8px; min-height: 16px; }
+.nb-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--wall); transition: background .25s; }
+.board.nobishiro { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 5px; }
+.nb-cell {
+  position: relative; aspect-ratio: 1; min-width: 0; border-radius: 8px; overflow: hidden;
+  background: var(--tile); display: flex; align-items: center; justify-content: center;
+}
+.nb-cell.wall { background: var(--wall) repeating-linear-gradient(135deg, transparent 0 6px, var(--stripe) 6px 8px); }
+.nb-cell.empty { cursor: pointer; }
+.nb-cell.hint { box-shadow: inset 0 0 0 3px var(--accent); animation: blink 1s ease-in-out infinite; }
+/* 色と番号は指の邪魔をしない(触感用のスイッチに指が届くように) */
+.nb-fill { position: absolute; inset: 0; pointer-events: none; }
+/* 絵の具がにじむように流れる。色の先頭をぼかしながら、置いた所から外へ */
+.nb-fill.flow { background-color: transparent !important; animation: nb-flow linear both; }
+.nb-fill.right { background-image: linear-gradient(to right, var(--fc) 0 33.4%, transparent 40%); background-size: 300% 100%; --p0: 100% 0; --p1: 0 0; }
+.nb-fill.left { background-image: linear-gradient(to left, var(--fc) 0 33.4%, transparent 40%); background-size: 300% 100%; --p0: 0 0; --p1: 100% 0; }
+.nb-fill.down { background-image: linear-gradient(to bottom, var(--fc) 0 33.4%, transparent 40%); background-size: 100% 300%; --p0: 0 100%; --p1: 0 0; }
+.nb-fill.up { background-image: linear-gradient(to top, var(--fc) 0 33.4%, transparent 40%); background-size: 100% 300%; --p0: 0 0; --p1: 0 100%; }
+@keyframes nb-flow { from { background-position: var(--p0); } to { background-position: var(--p1); } }
+.nb-num {
+  position: absolute; z-index: 2; left: 19%; top: 19%; width: 62%; aspect-ratio: 1; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; pointer-events: none;
+  background: rgba(255, 255, 255, .6); color: rgba(0, 0, 0, .55);
+  font-weight: 800; font-size: clamp(12px, 4vw, 19px);
+}
+.nb-num:empty { display: none; }
+.nb-cell.glow .nb-fill { animation: nb-glow .5s ease; }
+@keyframes nb-glow { 0% { filter: none; } 35% { filter: brightness(1.25) saturate(1.2); } 100% { filter: none; } }
