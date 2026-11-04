@@ -1,0 +1,638 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>うつしえ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+/* Layout: one column — stage header, mirrored boards with the placing board nearest the thumb, piece tray, buttons, rules */
+:root {
+  --bg: #eef0f4;
+  --surface: #ffffff;
+  --cell: #e4e7ee;
+  --place: #d9dde8;
+  --place-edge: #22252d;
+  --mirror: #8a90a0;
+  --ink: #22252d;
+  --muted: #6a7080;
+  --line: #d5d9e2;
+  --hide: #cfd3dc; --hide-line: #bfc4cf;
+  --p0: #e0645a; --p1: #3f7fd6; --p2: #e8b222; --p3: #3fa65a; --p4: #9a66d1; --p5: #1fa8c2; --p6: #e57fa8; --p7: #a47a52;
+  --font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161b; --surface: #1d2027; --cell: #2a2e37; --place: #353a46; --place-edge: #e9ebf1; --mirror: #7d8496;
+    --ink: #e9ebf1; --muted: #9ba1ae; --line: #343944; --hide: #30343e; --hide-line: #3b404b;
+    --p0: #f07d73; --p1: #6c9bf0; --p2: #f2c449; --p3: #5cc477; --p4: #b48ae8; --p5: #3fc6df; --p6: #f29cc0; --p7: #c39a72;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14161b; --surface: #1d2027; --cell: #2a2e37; --place: #353a46; --place-edge: #e9ebf1; --mirror: #7d8496;
+  --ink: #e9ebf1; --muted: #9ba1ae; --line: #343944; --hide: #30343e; --hide-line: #3b404b;
+  --p0: #f07d73; --p1: #6c9bf0; --p2: #f2c449; --p3: #5cc477; --p4: #b48ae8; --p5: #3fc6df; --p6: #f29cc0; --p7: #c39a72;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-weight: 500; -webkit-tap-highlight-color: transparent; }
+.app {
+  max-width: 560px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 28px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.stage-name { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stage-name h1 { margin: 0; white-space: nowrap; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.tag { font-size: 0.72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; letter-spacing: 0.08em; white-space: nowrap; }
+.size { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; line-height: 1.5; }
+button {
+  white-space: nowrap; font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 14px; cursor: pointer; font-weight: 700; font-size: 0.95rem; touch-action: manipulation;
+}
+button:disabled { opacity: 0.4; cursor: default; }
+button:focus-visible { outline: 3px solid var(--p1); outline-offset: 2px; }
+button:active:not(:disabled) { transform: translateY(1px); }
+.board-card { position: relative; background: var(--surface); border-radius: var(--radius); padding: 14px 0; display: flex; justify-content: center; }
+.board-wrap { width: 100%; display: flex; justify-content: center; padding-inline: 14px; box-sizing: border-box; }
+#board { display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+.tray {
+  background: var(--surface); border-radius: var(--radius); padding: 12px;
+  display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; min-height: 64px; align-content: center;
+}
+.tray .empty { color: var(--muted); font-size: 0.9rem; }
+.piece {
+  padding: 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg);
+  touch-action: none; display: flex; align-items: center; justify-content: center; cursor: grab;
+}
+.piece canvas { display: block; pointer-events: none; }
+.piece.shake { animation: shake 0.3s ease; }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+.status { display: flex; justify-content: center; gap: 18px; font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.status b { color: var(--ink); font-weight: 700; }
+.skip { align-self: center; background: transparent; border-style: dashed; color: var(--muted); font-size: 0.85rem; padding: 8px 14px; }
+.buttons { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.rules { font-size: 0.9rem; line-height: 1.75; color: var(--muted); margin: 0; padding-left: 1.2em; }
+.rules li::marker { color: var(--mirror); }
+#drag { position: fixed; left: 0; top: 0; pointer-events: none; z-index: 20; }
+.overlay {
+  position: absolute; inset: 0; border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); text-align: center; padding: 16px;
+}
+.overlay h2 { margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: 0.06em; }
+.overlay p { margin: 0; color: var(--muted); }
+.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.clear-in { animation: rise 0.35s ease-out both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.list-head h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 10px; }
+.grid button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; font-variant-numeric: tabular-nums; }
+.grid button .num { font-size: 1.15rem; }
+.grid button .sz { font-size: 0.7rem; color: var(--muted); font-weight: 500; }
+.grid button.cleared { background: var(--cell); border-color: transparent; }
+.grid button.next { border: 2px solid var(--ink); }
+.list-note { margin: 0; font-size: 0.85rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { .clear-in, .piece.shake { animation: none; } }
+</style>
+
+<div class="app" id="game-view">
+  <div class="top">
+    <div class="stage-name">
+      <h1 id="stage-title">ステージ 1</h1>
+      <div class="meta"><span class="size" id="stage-size">4×4</span><span class="tag">うつしえ 試作</span></div>
+    </div>
+    <button id="btn-list" type="button">一覧</button>
+  </div>
+
+  <div class="board-card">
+    <div class="board-wrap" id="board-wrap"><canvas id="board" aria-label="パズルの 盤面"></canvas></div>
+    <div class="overlay" id="clear" hidden>
+      <h2>クリア。</h2>
+      <p id="clear-msg">ステージ 1 を クリアした。</p>
+      <button id="btn-next" class="primary" type="button">次の ステージへ</button>
+    </div>
+  </div>
+
+  <div class="tray" id="tray" aria-label="手持ちの ピース"></div>
+
+  <div class="status" aria-live="polite">
+    <span>置いた ピース <b id="st-pieces">0/6</b></span>
+    <span>埋まった マス <b id="st-cells">0/16</b></span>
+  </div>
+
+  <div class="buttons">
+    <button id="btn-undo" type="button">1手 戻す</button>
+    <button id="btn-reset" type="button">リセット</button>
+    <button id="btn-hint" type="button">ヒント</button>
+  </div>
+  <button id="btn-skip" class="skip" type="button">ステージを スキップ（試作用）</button>
+
+  <ul class="rules">
+    <li>太い 枠の 盤面に ピースを 置くと、境目を 鏡に して、ほかの 盤面に 映る。</li>
+    <li>置いた 盤面には 何も 残らない。斜線の 盤面は 隠れていて 見えない。</li>
+    <li>ほかの 盤面を すき間なく 埋めたら クリア。</li>
+    <li>ピースは 回せない。ドラッグで 置く。</li>
+    <li>置いた ピースは 外せない。1手 戻す か リセットで 直す。</li>
+  </ul>
+</div>
+
+<div class="app" id="list-view" hidden>
+  <div class="list-head">
+    <h1>ステージ 一覧</h1>
+    <button id="btn-back" type="button">もどる</button>
+  </div>
+  <p class="list-note">クリアした ステージは 何度でも 遊べる。</p>
+  <div class="grid" id="stage-grid"></div>
+</div>
+
+<canvas id="drag" hidden></canvas>
+
+<script id="engine">
+// ===== Mirror puzzle engine: tiling generator =====
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffleArr(a, rand) {
+  for (let i = a.length - 1; i > 0; i--) { const j = (rand() * (i + 1)) | 0; const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+// layouts, in stages: 'H' = side by side (1-20),
+// 'Q2' = four boards, top-left and top visible (21-40), 'Q1' = four boards, only top-left visible (41-)
+function mirrorParams(s) {
+  if (s <= 3) return { n: 4, layout: 'H', minP: 2, maxP: 3 };
+  if (s <= 10) return { n: 5, layout: 'H', minP: 2, maxP: 4 };
+  if (s <= 20) return { n: 6, layout: 'H', minP: 3, maxP: 4 };
+  if (s <= 30) return { n: 5, layout: 'Q2', minP: 3, maxP: 4 };
+  if (s <= 40) return { n: 6, layout: 'Q2', minP: 3, maxP: 4 };
+  if (s <= 50) return { n: 5, layout: 'Q1', minP: 3, maxP: 4 };
+  if (s <= 60) return { n: 6, layout: 'Q1', minP: 3, maxP: 5 };
+  return { n: 6, layout: 'Q1', minP: 4, maxP: 5 };
+}
+function nbList(n) {
+  const nb = [];
+  for (let i = 0; i < n * n; i++) {
+    const r = (i / n) | 0, c = i % n, a = [];
+    if (r > 0) a.push(i - n); if (r < n - 1) a.push(i + n);
+    if (c > 0) a.push(i - 1); if (c < n - 1) a.push(i + 1);
+    nb.push(a);
+  }
+  return nb;
+}
+function genTiling(n, minP, maxP, rand) {
+  const N = n * n, nb = nbList(n);
+  for (let attempt = 0; attempt < 500; attempt++) {
+    const owner = new Int16Array(N).fill(-1), pieces = [];
+    const freeDeg = x => { let d = 0; for (const y of nb[x]) if (owner[y] < 0) d++; return d; };
+    let remaining = N;
+    while (remaining > 0) {
+      let best = [], bd = 9;
+      for (let x = 0; x < N; x++) if (owner[x] < 0) { const d = freeDeg(x); if (d < bd) { bd = d; best = [x]; } else if (d === bd) best.push(x); }
+      const start = best[(rand() * best.length) | 0];
+      const id = pieces.length, target = minP + ((rand() * (maxP - minP + 1)) | 0);
+      const cells = [start]; owner[start] = id; remaining--;
+      while (cells.length < target) {
+        const front = [];
+        for (const x of cells) for (const y of nb[x]) if (owner[y] < 0 && front.indexOf(y) < 0) front.push(y);
+        if (!front.length) break;
+        let fb = [], fd = 9;
+        for (const y of front) { const d = freeDeg(y); if (d < fd) { fd = d; fb = [y]; } else if (d === fd) fb.push(y); }
+        const pick = rand() < 0.7 ? fb[(rand() * fb.length) | 0] : front[(rand() * front.length) | 0];
+        cells.push(pick); owner[pick] = id; remaining--;
+      }
+      pieces.push(cells);
+    }
+    let ok = true, changed = true;
+    while (changed && ok) {
+      changed = false;
+      for (let i = 0; i < pieces.length; i++) {
+        const p = pieces[i];
+        if (!p || p.length >= minP) continue;
+        let bestJ = -1, bs = 99;
+        for (const x of p) for (const y of nb[x]) {
+          const j = owner[y];
+          if (j !== i && j >= 0 && pieces[j] && pieces[j].length + p.length <= maxP && pieces[j].length < bs) { bs = pieces[j].length; bestJ = j; }
+        }
+        if (bestJ < 0) { ok = false; break; }
+        for (const x of p) { owner[x] = bestJ; pieces[bestJ].push(x); }
+        pieces[i] = null; changed = true;
+      }
+    }
+    if (!ok) continue;
+    const res = pieces.filter(Boolean);
+    if (res.some(p => p.length < minP || p.length > maxP)) continue;
+    return res;
+  }
+  return null;
+}
+function normShape(rc) {
+  let mr = Infinity, mc = Infinity;
+  for (const [r, c] of rc) { if (r < mr) mr = r; if (c < mc) mc = c; }
+  return rc.map(([r, c]) => [r - mr, c - mc]).sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+}
+// rotate 90 degrees clockwise k times
+function rotateShape(shape, k) {
+  let s = shape.map(p => p.slice());
+  for (let i = 0; i < (k % 4 + 4) % 4; i++) s = normShape(s.map(([r, c]) => [c, -r]));
+  return normShape(s);
+}
+function generateMirror(stage) {
+  const P = mirrorParams(stage);
+  const rand = mulberry32((stage * 3266489917) ^ 0x165667b1);
+  const n = P.n;
+  let tiling = null, minP = P.minP;
+  for (let tries = 0; !tiling && tries < 20; tries++) tiling = genTiling(n, minP, P.maxP, rand);
+  while (!tiling) { minP = Math.max(1, minP - 1); tiling = genTiling(n, minP, P.maxP, rand); }
+  shuffleArr(tiling, rand);
+  const owner = new Int16Array(n * n);
+  tiling.forEach((cells, i) => cells.forEach(x => { owner[x] = i; }));
+  // greedy coloring so touching pieces get different colors
+  const nb = nbList(n), colors = new Array(tiling.length).fill(-1);
+  tiling.forEach((cells, i) => {
+    const used = new Set();
+    for (const x of cells) for (const y of nb[x]) { const j = owner[y]; if (j !== i && colors[j] >= 0) used.add(colors[j]); }
+    let c = (rand() * 8) | 0;
+    for (let t = 0; t < 8 && used.has(c); t++) c = (c + 1) % 8;
+    colors[i] = c;
+  });
+  const pieces = tiling.map((cells, i) => {
+    const rc = cells.map(x => [(x / n) | 0, x % n]);
+    let mr = Infinity, mc = Infinity;
+    for (const [r, c] of rc) { if (r < mr) mr = r; if (c < mc) mc = c; }
+    return {
+      id: i,
+      shape: normShape(rc),
+      origin: [mr, mc],
+      solCells: cells.slice().sort((a, b) => a - b),
+      rot0: 0, // pieces keep the orientation they were cut in (no rotating)
+      color: colors[i]
+    };
+  });
+  // pieces already in place at the start: half at stage 1, none by stage 10,
+  // and a few again at the start of each new stage group (21-26, 41-46)
+  let frac = 0;
+  if (stage <= 10) frac = 0.5 * (10 - stage) / 9;
+  else if (stage >= 21 && stage <= 26) frac = Math.max(0, 0.4 - (stage - 21) * 0.08);
+  else if (stage >= 41 && stage <= 46) frac = Math.max(0, 0.4 - (stage - 41) * 0.08);
+  const preCount = Math.round(frac * pieces.length);
+  shuffleArr(pieces.map(p => p.id), rand).slice(0, preCount).forEach(id => { pieces[id].pre = true; });
+  return { stage, n, layout: P.layout, pieces };
+}
+if (typeof module !== 'undefined') module.exports = { generateMirror, mirrorParams, rotateShape, genTiling };
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const STORE_KEY = 'aimi-mirror-proto-v1';
+  const LAYOUT_NAME = { H: '横に 2つ', Q2: '4分割（左上と上）', Q1: '4分割（左上だけ）' };
+  const LAYOUT_SHORT = { H: '横', Q2: '左上と上', Q1: '左上だけ' };
+  const $ = id => document.getElementById(id);
+
+  function loadProgress() {
+    try { const raw = localStorage.getItem(STORE_KEY); if (raw) { const p = JSON.parse(raw); if (p && typeof p.maxCleared === 'number') return p; } } catch (e) {}
+    return { maxCleared: 0, current: 1 };
+  }
+  function saveProgress() { try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {} }
+  let progress = loadProgress();
+
+  // ---------- state ----------
+  let pz = null, stage = 1, rots = [], placed = [], history = [], cleared = false;
+  const canvas = $('board'), ctx = canvas.getContext('2d');
+  let B = 200, cell = 40, W = 200, H = 400, dpr = 1, boards = [];
+
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function hexRgb(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(ch => ch + ch).join(''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); }
+  // mix color a toward color b by t (0..1), returns a solid hex color
+  function blend(a, b, t) {
+    const A = hexRgb(a), Bc = hexRgb(b);
+    return '#' + A.map((v, i) => Math.round(v + (Bc[i] - v) * t).toString(16).padStart(2, '0')).join('');
+  }
+  function sizeLabel(s) { const p = mirrorParams(s); return p.n + '×' + p.n + '・' + LAYOUT_NAME[p.layout]; }
+
+  function loadStage(s, keep) {
+    stage = s; cleared = false;
+    $('clear').hidden = true;
+    pz = generateMirror(s);
+    $('stage-title').textContent = 'ステージ ' + s;
+    const given = pz.pieces.filter(p => p.pre).length;
+    $('stage-size').textContent = sizeLabel(s) + '・ピース ' + (pz.pieces.length - given) + '個' + (given ? '（最初から ' + given + '個）' : '');
+    if (keep && keep.rots && keep.rots.length === pz.pieces.length) { rots = keep.rots.slice(); placed = (keep.placed || []).map(p => ({ id: p.id, cells: p.cells.slice(), pre: !!p.pre })); }
+    else { rots = pz.pieces.map(p => p.rot0); placed = prePlaced(); }
+    history = [];
+    progress.current = s; saveProgress();
+    layout(); renderTray(); render(); updateUI();
+  }
+
+  // ---------- geometry ----------
+  // each board: {x, y, map: (r,c) -> [r,c] or null for the placing board, place: bool}
+  function layout() {
+    if (!pz) return;
+    const n = pz.n, wrapW = $('board-wrap').clientWidth - 28;
+    W = Math.min(wrapW, 440);
+    B = Math.floor(W / 2);
+    cell = B / n;
+    const m = (r, c) => [r, c];
+    if (pz.layout === 'H') {
+      const x = (W - 2 * B) / 2;
+      boards = [
+        { x, y: 0, map: (r, c) => [r, n - 1 - c] },
+        { x: x + B, y: 0, place: true, map: m }
+      ];
+      H = B;
+    } else {
+      const x = (W - 2 * B) / 2;
+      // four boards: bottom-right is where pieces go; bottom-left is always hidden,
+      // the top board is hidden too once only the top-left (point symmetry) is shown
+      boards = [
+        { x, y: 0, map: (r, c) => [n - 1 - r, n - 1 - c] },
+        { x: x + B, y: 0, map: (r, c) => [n - 1 - r, c], hidden: pz.layout === 'Q1' },
+        { x, y: B, map: (r, c) => [r, n - 1 - c], hidden: true },
+        { x: x + B, y: B, place: true, map: m }
+      ];
+      H = B * 2;
+    }
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+  }
+  function placeBoard() { return boards.find(b => b.place); }
+
+  // ---------- derived ----------
+  function occupancy() {
+    const occ = new Int16Array(pz.n * pz.n).fill(-1);
+    placed.forEach(p => p.cells.forEach(x => { occ[x] = p.id; }));
+    return occ;
+  }
+  function shapeOf(id) { return rotateShape(pz.pieces[id].shape, rots[id]); }
+  function isPlaced(id) { return placed.some(p => p.id === id); }
+  function prePlaced() { return pz.pieces.filter(p => p.pre).map(p => ({ id: p.id, cells: p.solCells.slice(), pre: true })); }
+  function ownCount() { return placed.filter(p => !p.pre).length; }
+  function ownTotal() { return pz.pieces.filter(p => !p.pre).length; }
+
+  // ---------- drawing ----------
+  function rr(c, x, y, w, h, r) {
+    c.beginPath();
+    if (c.roundRect) { c.roundRect(x, y, w, h, r); return; }
+    c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  }
+  // draws a set of cells (as [r,c]) of one piece as one joined shape
+  function drawPieceCells(c, cellsRC, ox, oy, sz, color) {
+    const g = Math.max(1.5, sz * 0.07), key = new Set(cellsRC.map(([r, cc]) => r + ',' + cc));
+    c.fillStyle = color;
+    for (const [r, cc] of cellsRC) {
+      const x = ox + cc * sz, y = oy + r * sz;
+      rr(c, x + g, y + g, sz - 2 * g, sz - 2 * g, sz * 0.16); c.fill();
+      if (key.has(r + ',' + (cc + 1))) c.fillRect(x + sz * 0.5, y + g, sz, sz - 2 * g);
+      if (key.has((r + 1) + ',' + cc)) c.fillRect(x + g, y + sz * 0.5, sz - 2 * g, sz);
+      if (key.has(r + ',' + (cc + 1)) && key.has((r + 1) + ',' + cc) && key.has((r + 1) + ',' + (cc + 1))) c.fillRect(x + sz - g - 1, y + sz - g - 1, 2 * g + 2, 2 * g + 2);
+    }
+  }
+  let ghost = null; // cells (indices) to outline on the placing board while dragging
+  function render() {
+    if (!pz) return;
+    const n = pz.n, cellBg = css('--cell'), placeBg = css('--place'), edge = css('--place-edge'), mirror = css('--mirror');
+    const pal = []; for (let i = 0; i < 8; i++) pal.push(css('--p' + i));
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const g = Math.max(1.5, cell * 0.07);
+    for (const b of boards) {
+      for (let r = 0; r < n; r++) for (let c = 0; c < n; c++) {
+        rr(ctx, b.x + c * cell + g, b.y + r * cell + g, cell - 2 * g, cell - 2 * g, cell * 0.16);
+        ctx.fillStyle = b.place ? placeBg : cellBg; ctx.fill();
+      }
+      if (b.place) {
+        ctx.strokeStyle = edge; ctx.lineWidth = 2.5;
+        rr(ctx, b.x + 1.25, b.y + 1.25, B - 2.5, B - 2.5, cell * 0.2); ctx.stroke();
+      } else if (b.hidden) {
+        // covered with gray diagonal stripes
+        ctx.save();
+        rr(ctx, b.x + g, b.y + g, B - 2 * g, B - 2 * g, cell * 0.2); ctx.fillStyle = css('--hide'); ctx.fill(); ctx.clip();
+        ctx.strokeStyle = css('--hide-line'); ctx.lineWidth = Math.max(2, cell * 0.12);
+        const step = Math.max(9, cell * 0.45);
+        ctx.beginPath();
+        for (let d = -B; d < B * 2; d += step) { ctx.moveTo(b.x + d, b.y + B); ctx.lineTo(b.x + d + B, b.y); }
+        ctx.stroke();
+        ctx.restore();
+      } else {
+        placed.forEach(p => {
+          const rc = p.cells.map(x => b.map((x / n) | 0, x % n));
+          const col = pal[pz.pieces[p.id].color];
+          // pieces given at the start: a solid lighter shade (alpha would darken where shapes overlap)
+          drawPieceCells(ctx, rc, b.x, b.y, cell, p.pre ? blend(col, css('--surface'), 0.45) : col);
+        });
+      }
+    }
+    // ghost on the placing board only
+    if (ghost) {
+      const pb = placeBoard(), col = pal[pz.pieces[ghost.id].color];
+      ctx.save(); ctx.globalAlpha = 0.85; ctx.setLineDash([4, 3]); ctx.strokeStyle = col; ctx.lineWidth = 2;
+      for (const x of ghost.cells) { rr(ctx, pb.x + (x % n) * cell + g, pb.y + ((x / n) | 0) * cell + g, cell - 2 * g, cell - 2 * g, cell * 0.16); ctx.stroke(); }
+      ctx.restore();
+    }
+    // mirror lines
+    ctx.save(); ctx.strokeStyle = mirror; ctx.lineWidth = 2; ctx.setLineDash([6, 5]);
+    const x0 = boards[0].x;
+    if (pz.layout === 'H') { ctx.beginPath(); ctx.moveTo(x0 + B, 0); ctx.lineTo(x0 + B, B); ctx.stroke(); }
+    else {
+      ctx.beginPath(); ctx.moveTo(x0, B); ctx.lineTo(x0 + 2 * B, B); ctx.moveTo(x0 + B, 0); ctx.lineTo(x0 + B, 2 * B); ctx.stroke();
+      ctx.setLineDash([]); ctx.fillStyle = mirror; ctx.beginPath(); ctx.arc(x0 + B, B, 4, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  // ---------- tray ----------
+  const TRAY_CELL = 15;
+  function drawShape(c, shape, sz, color) {
+    const h = Math.max(...shape.map(p => p[0])) + 1, w = Math.max(...shape.map(p => p[1])) + 1;
+    const d = Math.max(1, window.devicePixelRatio || 1);
+    c.canvas.width = Math.round(w * sz * d); c.canvas.height = Math.round(h * sz * d);
+    c.canvas.style.width = w * sz + 'px'; c.canvas.style.height = h * sz + 'px';
+    c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w * sz, h * sz);
+    drawPieceCells(c, shape, 0, 0, sz, color);
+    return { w, h };
+  }
+  function renderTray() {
+    const tray = $('tray'); tray.textContent = '';
+    let any = false;
+    pz.pieces.forEach(p => {
+      if (isPlaced(p.id)) return;
+      any = true;
+      const el = document.createElement('div');
+      el.className = 'piece'; el.dataset.id = p.id; el.id = 'piece-' + p.id;
+      el.setAttribute('role', 'button'); el.setAttribute('aria-label', 'ピース ' + (p.id + 1) + '。ドラッグで 置く');
+      const cv = document.createElement('canvas'); el.appendChild(cv);
+      drawShape(cv.getContext('2d'), shapeOf(p.id), TRAY_CELL, css('--p' + p.color));
+      el.addEventListener('pointerdown', onPieceDown);
+      tray.appendChild(el);
+    });
+    if (!any) { const s = document.createElement('span'); s.className = 'empty'; s.textContent = 'ピースは 全部 置いた。'; tray.appendChild(s); }
+  }
+
+  // ---------- dragging ----------
+  const dragCv = $('drag'), dctx = dragCv.getContext('2d');
+  let drag = null;
+  function onPieceDown(ev) {
+    if (cleared) return;
+    const el = ev.currentTarget, id = +el.dataset.id;
+    el.setPointerCapture(ev.pointerId);
+    drag = { id, el, pid: ev.pointerId, sx: ev.clientX, sy: ev.clientY, moving: false };
+    el.addEventListener('pointermove', onPieceMove);
+    el.addEventListener('pointerup', onPieceUp);
+    el.addEventListener('pointercancel', onPieceUp);
+    ev.preventDefault();
+  }
+  function startDragVisual() {
+    const sh = shapeOf(drag.id);
+    const dims = drawShape(dctx, sh, cell, css('--p' + pz.pieces[drag.id].color));
+    drag.w = dims.w; drag.h = dims.h; drag.shape = sh;
+    dragCv.hidden = false;
+    drag.el.style.opacity = '0.35';
+  }
+  function positionDrag(x, y) {
+    // the piece floats above the finger so it stays visible
+    const left = x - (drag.w * cell) / 2, top = y - drag.h * cell - 28;
+    dragCv.style.transform = 'translate(' + left + 'px,' + top + 'px)';
+    // snap against the placing board
+    const rect = canvas.getBoundingClientRect(), pb = placeBoard(), n = pz.n;
+    const c0 = Math.round((left - (rect.left + pb.x)) / cell), r0 = Math.round((top - (rect.top + pb.y)) / cell);
+    const occ = occupancy(), cells = [];
+    let ok = true;
+    for (const [r, c] of drag.shape) {
+      const rr2 = r0 + r, cc = c0 + c;
+      if (rr2 < 0 || rr2 >= n || cc < 0 || cc >= n) { ok = false; break; }
+      const x2 = rr2 * n + cc;
+      if (occ[x2] >= 0) { ok = false; break; }
+      cells.push(x2);
+    }
+    const near = r0 > -drag.h && r0 < n && c0 > -drag.w && c0 < n;
+    drag.target = ok ? cells : null;
+    drag.near = near;
+    const next = ok ? { id: drag.id, cells } : null;
+    if (JSON.stringify(next) !== JSON.stringify(ghost)) { ghost = next; render(); }
+  }
+  function onPieceMove(ev) {
+    if (!drag || ev.pointerId !== drag.pid) return;
+    if (!drag.moving) {
+      if (Math.hypot(ev.clientX - drag.sx, ev.clientY - drag.sy) < 8) return;
+      drag.moving = true; startDragVisual();
+    }
+    positionDrag(ev.clientX, ev.clientY);
+  }
+  function onPieceUp(ev) {
+    if (!drag || ev.pointerId !== drag.pid) return;
+    const d = drag; drag = null;
+    d.el.removeEventListener('pointermove', onPieceMove);
+    d.el.removeEventListener('pointerup', onPieceUp);
+    d.el.removeEventListener('pointercancel', onPieceUp);
+    dragCv.hidden = true; ghost = null;
+    if (!d.moving) { d.el.style.opacity = ''; return; } // a tap does nothing: pieces can't be rotated
+    if (d.target) {
+      history.push(snapshot());
+      placed.push({ id: d.id, cells: d.target });
+      afterChange();
+    } else {
+      d.el.style.opacity = '';
+      if (d.near) { d.el.classList.remove('shake'); void d.el.offsetWidth; d.el.classList.add('shake'); }
+      render();
+    }
+  }
+
+  // ---------- state changes ----------
+  function snapshot() { return { placed: placed.map(p => ({ id: p.id, cells: p.cells.slice(), pre: !!p.pre })), rots: rots.slice() }; }
+  function restore(s) { placed = s.placed; rots = s.rots; }
+  function afterChange() {
+    renderTray(); render(); updateUI();
+    if (placed.length === pz.pieces.length) onClear();
+  }
+  function updateUI() {
+    if (!pz) return;
+    const filled = placed.reduce((a, p) => a + p.cells.length, 0);
+    $('st-pieces').textContent = ownCount() + '/' + ownTotal();
+    $('st-cells').textContent = filled + '/' + pz.n * pz.n;
+    $('btn-undo').disabled = cleared || history.length === 0;
+    $('btn-reset').disabled = cleared || ownCount() === 0;
+    $('btn-hint').disabled = cleared;
+  }
+  function onClear() {
+    cleared = true;
+    if (stage > progress.maxCleared) progress.maxCleared = stage;
+    saveProgress(); updateUI();
+    $('clear-msg').textContent = 'ステージ ' + stage + ' を クリアした。';
+    const el = $('clear'); el.hidden = false; el.classList.remove('clear-in'); void el.offsetWidth; el.classList.add('clear-in');
+    $('btn-next').focus({ preventScroll: true });
+  }
+  $('btn-undo').addEventListener('click', function () { if (!history.length || cleared) return; restore(history.pop()); afterChange(); });
+  $('btn-reset').addEventListener('click', function () { if (cleared || !ownCount()) return; history.push(snapshot()); placed = prePlaced(); afterChange(); });
+  $('btn-hint').addEventListener('click', function () {
+    if (cleared) return;
+    const same = (a, b) => a.length === b.length && a.every((v, i) => v === b[i]);
+    const target = pz.pieces.find(p => { const pl = placed.find(q => q.id === p.id); return !pl || !same(pl.cells.slice().sort((a, b) => a - b), p.solCells); });
+    if (!target) return;
+    history.push(snapshot());
+    const sol = new Set(target.solCells);
+    placed = placed.filter(q => q.id !== target.id && !q.cells.some(x => sol.has(x)));
+    rots[target.id] = 0;
+    placed.push({ id: target.id, cells: target.solCells.slice() });
+    afterChange();
+  });
+  $('btn-next').addEventListener('click', function () { loadStage(stage + 1); });
+  // prototype only: jump ahead without solving (counts the stage as cleared so the list reaches it)
+  $('btn-skip').addEventListener('click', function () {
+    if (stage > progress.maxCleared) progress.maxCleared = stage;
+    saveProgress(); loadStage(stage + 1);
+  });
+  $('btn-list').addEventListener('click', showList);
+  $('btn-back').addEventListener('click', function () { $('list-view').hidden = true; $('game-view').hidden = false; layout(); render(); });
+  function showList() {
+    const grid = $('stage-grid'); grid.textContent = '';
+    const last = progress.maxCleared + 1;
+    for (let s = 1; s <= last; s++) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.id = 'stage-btn-' + s;
+      if (s <= progress.maxCleared) b.classList.add('cleared');
+      if (s === last) b.classList.add('next');
+      const p = mirrorParams(s);
+      b.innerHTML = '<span class="num">' + s + '</span><span class="sz">' + p.n + '×' + p.n + ' ' + LAYOUT_SHORT[p.layout] + '</span>';
+      b.addEventListener('click', function () { $('list-view').hidden = true; $('game-view').hidden = false; loadStage(s); });
+      grid.appendChild(b);
+    }
+    $('game-view').hidden = true; $('list-view').hidden = false;
+    const cur = $('stage-btn-' + stage); if (cur) cur.scrollIntoView({ block: 'center' });
+  }
+
+  // ---------- theme + resize ----------
+  function refresh() { layout(); render(); if (pz) renderTray(); }
+  if (window.ResizeObserver) new ResizeObserver(function () { layout(); render(); }).observe($('board-wrap'));
+  else window.addEventListener('resize', refresh);
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', refresh);
+  new MutationObserver(refresh).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(refresh);
+
+  // ---------- boot ----------
+  const VERSION = 3;
+  function start(data) {
+    data = data || {};
+    let s = data.stage || progress.current || 1;
+    if (s > progress.maxCleared + 1) s = progress.maxCleared + 1;
+    if (s < 1) s = 1;
+    loadStage(s, data.v === VERSION && data.stage === s ? data : null);
+  }
+  const hot = window.claude && window.claude.hot;
+  if (hot && hot.snapshot) { try { hot.snapshot(function () { return { v: VERSION, stage: stage, placed: placed, rots: rots }; }); } catch (e) {} }
+  if (hot && hot.ready) hot.ready(start); else start(hot && hot.data ? hot.data : {});
+})();
+</script>
+
+</body></html>

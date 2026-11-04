@@ -1,0 +1,10 @@
+{
+  "name": "masumasu-puzzle",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "serve": "npx serve .",
+    "icons": "node tools/make-icons.mjs"
+  }
+}

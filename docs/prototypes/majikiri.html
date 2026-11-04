@@ -1,0 +1,227 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>まじきり 試作B</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=M+PLUS+Rounded+1c:wght@400;700&display=swap">
+<style>
+/* 前の試作と同じすっきり無地。上に「部屋の●の数」の組み合わせを並べる */
+:root{
+  --bg:#f4f5f4; --tile:#ffffff; --ink:#2c3331; --mute:#858d8a; --gap:#e1e4e2;
+  --accent:#3d7f72; --accent-ink:#ffffff; --band:#ffffff; --danger:#c0605a; --dot:#4c5a56; --chip:#e9ecea;
+  --f-disp:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;
+  --f-body:"M PLUS Rounded 1c","Hiragino Sans",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1a1d1c; --tile:#2a2f2d; --ink:#e8ecea; --mute:#959e9a; --gap:#222725;
+  --accent:#7cc7b6; --accent-ink:#12201c; --band:#262b29; --danger:#e08a84; --dot:#d6dedb; --chip:#333936; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1a1d1c; --tile:#2a2f2d; --ink:#e8ecea; --mute:#959e9a; --gap:#222725;
+  --accent:#7cc7b6; --accent-ink:#12201c; --band:#262b29; --danger:#e08a84; --dot:#d6dedb; --chip:#333936; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;user-select:none;-webkit-user-select:none}
+.app{max-width:440px;margin:0 auto;padding-block:16px 120px;display:flex;flex-direction:column;gap:12px}
+header{display:flex;align-items:center;justify-content:space-between}
+h1{font-family:var(--f-disp);font-weight:900;font-size:20px;margin:0;letter-spacing:.06em}
+.stage{display:flex;align-items:center;gap:4px}
+.stage b{font-family:var(--f-disp);font-weight:700;font-size:15px;min-width:5.6em;text-align:center;font-variant-numeric:tabular-nums}
+.info{display:flex;justify-content:center;gap:14px;font-size:13px;color:var(--mute);font-variant-numeric:tabular-nums;flex-wrap:wrap}
+.info b{color:var(--ink)}
+.target{display:flex;flex-wrap:wrap;justify-content:center;gap:6px}
+.chip{display:flex;align-items:center;gap:3px;background:var(--chip);border-radius:999px;padding:6px 10px;min-height:12px}
+.chip i{width:8px;height:8px;border-radius:50%;background:var(--dot);display:block}
+.tlabel{text-align:center;font-size:12px;color:var(--mute);margin-bottom:-4px}
+.msg{text-align:center;font-size:14px;min-height:1.5em;color:var(--mute)}
+button{font-family:var(--f-body);font-size:15px;border:0;background:var(--tile);color:var(--ink);
+  border-radius:12px;padding:12px 8px;cursor:pointer;transition:transform .1s}
+button:active{transform:scale(.96)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.3;cursor:default}
+.icon{width:34px;height:34px;padding:0;font-size:13px;border-radius:50%;background:transparent}
+.board{position:relative;aspect-ratio:1;max-width:100%;background:var(--tile);border-radius:12px;touch-action:none;overflow:hidden}
+.grid{position:absolute;inset:0;display:grid}
+.grid div{box-shadow:inset 0 0 0 .5px var(--gap);display:flex;align-items:center;justify-content:center}
+.dot{width:36%;aspect-ratio:1;border-radius:50%;background:var(--dot);transition:background .2s,transform .2s}
+.dot.bad{background:var(--danger);transform:scale(1.12)}
+.dot.win{background:var(--accent);animation:glow .7s ease-out}
+@keyframes glow{0%{transform:scale(1)}40%{transform:scale(1.35);box-shadow:0 0 0 6px color-mix(in srgb,var(--accent) 30%,transparent)}100%{transform:scale(1)}}
+.line{position:absolute;background:var(--accent);border-radius:3px;pointer-events:none;transition:opacity .15s}
+.line.h{height:5px;left:0;right:0;transform:translateY(-50%)}
+.line.v{width:5px;top:0;bottom:0;transform:translateX(-50%)}
+.line.hint{background:transparent;outline:3px dashed var(--accent);animation:blink 1s ease-in-out infinite}
+@keyframes blink{50%{opacity:.2}}
+.ctrl{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.mode{display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--tile);border-radius:12px;padding:4px}
+.mode button{background:transparent;border-radius:9px;padding:10px 8px}
+.mode button.on{background:var(--accent);color:var(--accent-ink);font-weight:700}
+.rules{font-size:13px;color:var(--mute);line-height:1.75;margin:0;padding-left:1.2em}
+.note{font-size:12px;color:var(--mute);text-align:center;margin:0}
+.band{position:fixed;left:0;right:0;bottom:0;background:var(--band);
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  box-shadow:0 -6px 24px rgba(0,0,0,.08);transform:translateY(110%);transition:transform .35s cubic-bezier(.3,1.2,.5,1)}
+.band.show{transform:none}
+.band-in{max-width:440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.band b{font-family:var(--f-disp);font-weight:900;font-size:22px;color:var(--accent);display:block}
+.band small{color:var(--mute);font-size:13px}
+.band button{background:var(--accent);color:var(--accent-ink);font-weight:700;padding:12px 22px}
+@media (prefers-reduced-motion:reduce){.line.hint,.dot.win{animation:none}.band{transition:none}}
+</style>
+
+<div class="app">
+  <header>
+    <h1>まじきり</h1>
+    <div class="stage">
+      <button class="icon" id="prev" aria-label="前のステージ">◀</button>
+      <b id="stageLabel">ステージ 1</b>
+      <button class="icon" id="nextSt" aria-label="次のステージ">▶</button>
+    </div>
+  </header>
+  <div class="info"><span id="iSize">5×5</span><span>縦あと<b id="iV">1</b>本</span><span>横あと<b id="iH">1</b>本</span><span>ヒント残り<b id="iHint">3</b></span></div>
+  <div class="tlabel">この組み合わせの部屋に分ける</div>
+  <div class="target" id="target"></div>
+  <div class="msg" id="msg"></div>
+  <div class="board" id="board"><div class="grid" id="grid"></div></div>
+  <div class="ctrl">
+    <button id="undo">1手戻す</button>
+    <button id="reset">最初から</button>
+    <button id="hint">ヒント</button>
+  </div>
+  <ul class="rules">
+    <li>引きたい境目の近くをタップすると、端から端まで直線が引ける。マスの左右のふちの近くなら縦線、上下のふちの近くなら横線。</li>
+    <li>指を上下にはらうと縦線、左右にはらうと横線が、はらい始めた所にいちばん近い境目に引ける。</li>
+    <li>引いた線は消せない。1手戻す・最初からで直す。</li>
+    <li>決まった本数の縦線と横線で、部屋の●の数が上の組み合わせとぴったり同じになるように分けたらクリア。</li>
+    <li>線を全部引いたあと、数が合わない部屋の●が赤くなる。</li>
+  </ul>
+  <p class="note">試作なので、◀▶でどのステージにも移れる(21・41・61・81・101で段階が変わる)。</p>
+</div>
+<div class="band" id="band" aria-live="polite">
+  <div class="band-in">
+    <div><b>クリア。</b><small id="bandTxt"></small></div>
+    <button id="bandNext">次へ</button>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+let stage=1,R=5,C=5,NV=1,NH=1,K=3,marks=[],target=[],sol=null,hl=[],vl=[],hist=[],hintsLeft=3,busy=false,won=false;
+let P=null; // ●の数の累積表
+try{stage=+localStorage.getItem("majikiri-b-stage")||1}catch(e){}
+
+// 段階：盤面・線の本数・1部屋の●の上限
+function cfg(s){
+  const alt=s%2===0;
+  if(s<=20)return{n:5,v:1,h:1,k:3};
+  if(s<=40)return alt?{n:6,v:1,h:2,k:3}:{n:6,v:2,h:1,k:3};
+  if(s<=60)return{n:6,v:2,h:2,k:4};
+  if(s<=80){const o=[{v:2,h:2},{v:1,h:3},{v:3,h:1}][s%3];return{n:7,...o,k:4}}
+  if(s<=100)return alt?{n:7,v:2,h:3,k:5}:{n:7,v:3,h:2,k:5};
+  const o=[{v:3,h:3},{v:2,h:4},{v:4,h:2}][s%3];return{n:8,...o,k:5};
+}
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function combos(n,k){const out=[];(function go(s,a){if(a.length===k){out.push(a.slice());return}for(let i=s;i<n;i++){a.push(i);go(i+1,a);a.pop()}})(0,[]);return out}
+function buildP(){P=Array.from({length:R+1},()=>new Array(C+1).fill(0));
+  const m=Array.from({length:R},()=>new Array(C).fill(0));marks.forEach(([r,c])=>m[r][c]=1);
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++)P[r+1][c+1]=m[r][c]+P[r][c+1]+P[r+1][c]-P[r][c]}
+const sum=(r0,c0,r1,c1)=>P[r1][c1]-P[r0][c1]-P[r1][c0]+P[r0][c0];
+// 線の位置 k は k行目(列目)の下(右)の境目
+function rooms(h,v){const hs=[0,...[...h].sort((a,b)=>a-b).map(k=>k+1),R],vs=[0,...[...v].sort((a,b)=>a-b).map(k=>k+1),C],out=[];
+  for(let i=0;i<hs.length-1;i++)for(let j=0;j<vs.length-1;j++)out.push({r0:hs[i],r1:hs[i+1],c0:vs[j],c1:vs[j+1],n:sum(hs[i],vs[j],hs[i+1],vs[j+1])});
+  return out}
+const sig=a=>[...a].sort((x,y)=>x-y).join(",");
+function valid(h,v){if(h.length!==NH||v.length!==NV)return false;return sig(rooms(h,v).map(x=>x.n))===sig(target)}
+function generate(s){
+  const c=cfg(s);R=C=c.n;NV=c.v;NH=c.h;K=c.k;const Rn=rng(s*7919+97);
+  const H=combos(R-1,NH),V=combos(C-1,NV);
+  for(let t=0;t<4000;t++){
+    const h=H[Math.floor(Rn()*H.length)],v=V[Math.floor(Rn()*V.length)];
+    marks=[];P=Array.from({length:R+1},()=>new Array(C+1).fill(0));
+    const rs=rooms(h,v),counts=[];
+    for(const rm of rs){
+      const cells=[];for(let r=rm.r0;r<rm.r1;r++)for(let q=rm.c0;q<rm.c1;q++)cells.push([r,q]);
+      const n=1+Math.floor(Rn()*Math.min(K,cells.length));counts.push(n);
+      for(let i=0;i<n;i++){const j=i+Math.floor(Rn()*(cells.length-i));[cells[i],cells[j]]=[cells[j],cells[i]];marks.push(cells[i])}
+    }
+    if(new Set(counts).size<2)continue; // 全部同じ数だと前のルールと同じになる
+    if(!counts.includes(K)&&t<3000)continue; // その段階の上限の数を必ず入れる
+    target=counts;buildP();
+    let n=0;for(const a of H){for(const b of V)if(valid(a,b)){n++;if(n>1)break}if(n>1)break}
+    if(n===1){sol={h,v};return}
+  }
+}
+function badKeys(){ // 組み合わせより多く出てきた数の部屋を赤くする
+  const rs=rooms(hl,vl),need={};target.forEach(x=>need[x]=(need[x]||0)+1);
+  const have={};rs.forEach(x=>have[x.n]=(have[x.n]||0)+1);
+  return rs.filter(x=>(have[x.n]||0)>(need[x.n]||0));
+}
+function render(hintLine){
+  const g=$("grid");g.innerHTML="";g.style.gridTemplateColumns=`repeat(${C},1fr)`;g.style.gridTemplateRows=`repeat(${R},1fr)`;
+  const full=hl.length===NH&&vl.length===NV,bad=full&&!won?badKeys():[];
+  for(let r=0;r<R;r++)for(let c=0;c<C;c++){const d=document.createElement("div");
+    if(marks.some(m=>m[0]===r&&m[1]===c)){const dot=document.createElement("span");dot.className="dot";
+      if(won)dot.classList.add("win");
+      else if(bad.some(x=>r>=x.r0&&r<x.r1&&c>=x.c0&&c<x.c1))dot.classList.add("bad");
+      d.appendChild(dot)}
+    g.appendChild(d)}
+  const b=$("board");b.querySelectorAll(".line").forEach(x=>x.remove());
+  hl.forEach(k=>b.appendChild(lineEl("h",k)));vl.forEach(k=>b.appendChild(lineEl("v",k)));
+  if(grow){const gr=grow;grow=null;const el=[...b.querySelectorAll(".line."+gr.t)].find(x=>x.dataset.k==gr.k);
+    if(el&&!matchMedia("(prefers-reduced-motion: reduce)").matches){const a=gr.t==="h"?["left","right"]:["top","bottom"];
+      el.style[a[0]]=gr.pos*100+"%";el.style[a[1]]=(1-gr.pos)*100+"%";void el.offsetWidth;
+      el.style.transition=`${a[0]} .18s ease-out, ${a[1]} .18s ease-out`;el.style[a[0]]="0";el.style[a[1]]="0"}}
+  if(hintLine){const e=lineEl(hintLine.t,hintLine.k);e.classList.add("hint");b.appendChild(e)}
+  const tg=$("target");tg.innerHTML="";[...target].sort((x,y)=>x-y).forEach(n=>{const ch=document.createElement("span");ch.className="chip";ch.setAttribute("aria-label",`●${n}個`);
+    for(let i=0;i<n;i++)ch.appendChild(document.createElement("i"));tg.appendChild(ch)});
+  $("iSize").textContent=`${R}×${C}`;$("iV").textContent=NV-vl.length;$("iH").textContent=NH-hl.length;$("iHint").textContent=hintsLeft;
+  $("stageLabel").textContent=`ステージ ${stage}`;$("prev").disabled=stage<=1;
+  $("undo").disabled=!hist.length||busy;$("hint").textContent=hintsLeft>0?"ヒント":"飛ばす";
+}
+function lineEl(t,k){const e=document.createElement("div");e.className="line "+t;e.dataset.k=k;
+  if(t==="h")e.style.top=((k+1)/R*100)+"%";else e.style.left=((k+1)/C*100)+"%";return e}
+let grow=null,start=null;
+// タップ：近い方の境目に引く。はらう：はらった向きの線を引く
+const bd=$("board");
+bd.addEventListener("pointerdown",e=>{if(busy)return;start={x:e.clientX,y:e.clientY,id:e.pointerId};try{bd.setPointerCapture(e.pointerId)}catch(_){}});
+bd.addEventListener("pointercancel",()=>{start=null});
+bd.addEventListener("pointerup",e=>{
+  if(busy||!start||e.pointerId!==start.id)return;
+  const r=bd.getBoundingClientRect(),dx=e.clientX-start.x,dy=e.clientY-start.y;
+  const fx=(start.x-r.left)/r.width*C,fy=(start.y-r.top)/r.height*R;start=null;
+  const kv=Math.min(C-2,Math.max(0,Math.round(fx)-1)),kh=Math.min(R-2,Math.max(0,Math.round(fy)-1));
+  let dir;
+  if(Math.hypot(dx,dy)>=r.width/C*0.35)dir=Math.abs(dy)>Math.abs(dx)?"v":"h";
+  else dir=Math.abs(fx-(kv+1))<=Math.abs(fy-(kh+1))?"v":"h";
+  draw(dir==="v"?{t:"v",k:kv,pos:Math.min(1,Math.max(0,fy/R))}:{t:"h",k:kh,pos:Math.min(1,Math.max(0,fx/C))});
+});
+function draw(t){
+  const arr=t.t==="h"?hl:vl,max=t.t==="h"?NH:NV;
+  if(arr.includes(t.k))return;
+  if(arr.length>=max){$("msg").textContent=t.t==="h"?"横線はもう引けない。":"縦線はもう引けない。";return}
+  hist.push({h:hl.slice(),v:vl.slice()});arr.push(t.k);grow=t;
+  try{if(navigator.vibrate)navigator.vibrate(12)}catch(e){}
+  $("msg").textContent="";
+  if(valid(hl,vl)){win();return}
+  render();
+}
+function win(){busy=true;won=true;render();
+  setTimeout(()=>{$("bandTxt").textContent=`ステージ ${stage}`;$("band").classList.add("show");busy=false},700)}
+function load(s){stage=Math.max(1,s);try{localStorage.setItem("majikiri-b-stage",stage)}catch(e){}
+  $("band").classList.remove("show");busy=false;won=false;hintsLeft=3;generate(stage);hl=[];vl=[];hist=[];$("msg").textContent="";render()}
+$("undo").onclick=()=>{if(busy||!hist.length)return;const p=hist.pop();hl=p.h;vl=p.v;won=false;$("msg").textContent="";render()};
+$("reset").onclick=()=>{if(busy)return;hist.push({h:hl.slice(),v:vl.slice()});hl=[];vl=[];$("msg").textContent="";render()};
+$("prev").onclick=()=>load(stage-1);
+$("nextSt").onclick=()=>load(stage+1);
+$("bandNext").onclick=()=>load(stage+1);
+$("hint").onclick=()=>{
+  if(busy)return;
+  if(hintsLeft<=0){load(stage+1);return}
+  const back=hl.filter(k=>!sol.h.includes(k)).length+vl.filter(k=>!sol.v.includes(k)).length;
+  if(back){hist.push({h:hl.slice(),v:vl.slice()});hl=hl.filter(k=>sol.h.includes(k));vl=vl.filter(k=>sol.v.includes(k))}
+  const mh=sol.h.find(k=>!hl.includes(k)),mv=sol.v.find(k=>!vl.includes(k));
+  const pick=mh!==undefined?{t:"h",k:mh}:mv!==undefined?{t:"v",k:mv}:null;
+  hintsLeft--;render(pick);
+  $("msg").textContent=(back?`間違った線を${back}本消した。`:"")+(pick?"点線の所をタップする。":"");
+};
+load(stage);
+</script>
+
+</body></html>

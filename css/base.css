@@ -1,0 +1,48 @@
+/* 色の決まり(明るい・暗い)、文字、ボタン。のびしろの試作の「すっきり無地」をもとにする */
+:root {
+  --bg: #f4f5f4; --tile: #ffffff; --ink: #2c3331; --mute: #858d8a; --gap: #e1e4e2;
+  --wall: #d3d8d6; --stripe: #b9c0bd; --accent: #3d7f72; --accent-ink: #ffffff; --band: #ffffff;
+  --font: "Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #1a1d1c; --tile: #2a2f2d; --ink: #e8ecea; --mute: #959e9a; --gap: #222725;
+    --wall: #333937; --stripe: #454d4a; --accent: #7cc7b6; --accent-ink: #12201c; --band: #262b29;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #1a1d1c; --tile: #2a2f2d; --ink: #e8ecea; --mute: #959e9a; --gap: #222725;
+  --wall: #333937; --stripe: #454d4a; --accent: #7cc7b6; --accent-ink: #12201c; --band: #262b29;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; min-height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+  -webkit-text-size-adjust: 100%;
+}
+h1 { margin: 0; font-size: 18px; font-weight: 700; }
+
+button {
+  font: inherit; font-size: 15px; color: var(--ink); background: var(--tile);
+  border: 0; border-radius: 12px; padding: 12px 8px; cursor: pointer;
+  touch-action: manipulation; transition: transform .1s, opacity .2s;
+}
+button:active:not(:disabled) { transform: scale(.96); }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: .3; cursor: default; }
+button.primary { background: var(--accent); color: var(--accent-ink); font-weight: 700; }
+button.text { background: transparent; padding: 8px 4px; color: var(--mute); }
+button.icon { width: 36px; height: 36px; padding: 0; font-size: 13px; border-radius: 50%; background: transparent; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

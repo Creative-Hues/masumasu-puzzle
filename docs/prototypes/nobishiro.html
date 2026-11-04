@@ -1,0 +1,296 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>のびしろ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&family=M+PLUS+Rounded+1c:wght@400;700&display=swap">
+<style>
+/* すっきり無地：中央に盤面、上にステージ、下に操作。クリア時は下から帯 */
+:root{
+  --bg:#f4f5f4; --tile:#ffffff; --ink:#2c3331; --mute:#858d8a; --gap:#e1e4e2;
+  --wall:#d3d8d6; --stripe:#b9c0bd; --accent:#3d7f72; --accent-ink:#ffffff; --band:#ffffff;
+  --f-disp:"Zen Maru Gothic","Hiragino Maru Gothic ProN",sans-serif;
+  --f-body:"M PLUS Rounded 1c","Hiragino Sans",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#1a1d1c; --tile:#2a2f2d; --ink:#e8ecea; --mute:#959e9a; --gap:#222725;
+  --wall:#333937; --stripe:#454d4a; --accent:#7cc7b6; --accent-ink:#12201c; --band:#262b29; color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#1a1d1c; --tile:#2a2f2d; --ink:#e8ecea; --mute:#959e9a; --gap:#222725;
+  --wall:#333937; --stripe:#454d4a; --accent:#7cc7b6; --accent-ink:#12201c; --band:#262b29; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  -webkit-tap-highlight-color:transparent;user-select:none}
+.app{max-width:440px;margin:0 auto;padding-block:16px 120px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box}
+header{display:flex;align-items:center;justify-content:space-between}
+h1{font-family:var(--f-disp);font-weight:900;font-size:22px;margin:0;letter-spacing:.08em}
+.stage{display:flex;align-items:center;gap:4px}
+.stage b{font-family:var(--f-disp);font-weight:700;font-size:15px;min-width:5.6em;text-align:center;font-variant-numeric:tabular-nums}
+button{font-family:var(--f-body);font-size:15px;border:0;background:var(--tile);color:var(--ink);
+  border-radius:12px;padding:12px 8px;cursor:pointer;transition:transform .1s,opacity .2s}
+button:active{transform:scale(.96)}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button:disabled{opacity:.3;cursor:default}
+.icon{width:34px;height:34px;padding:0;font-size:13px;border-radius:50%;background:transparent}
+.count{display:flex;align-items:center;justify-content:center;gap:8px;min-height:16px}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--gap);transition:background .25s}
+.msg{text-align:center;font-size:14px;color:var(--mute);min-height:1.5em;margin-top:-8px}
+.board{display:grid;gap:5px;aspect-ratio:1;max-width:100%}
+.cell{background:var(--tile);border-radius:8px;position:relative;overflow:hidden;aspect-ratio:1;min-width:0;min-height:0;
+  display:flex;align-items:center;justify-content:center}
+.cell.wall{background:var(--wall);background-image:repeating-linear-gradient(135deg,transparent 0 6px,var(--stripe) 6px 8px)}
+.cell.empty{cursor:pointer}
+.fill{position:absolute;inset:0;transform:scale(1)}
+.fill.go{}
+@keyframes bloom{from{transform:scale(.3);opacity:.2}to{transform:scale(1);opacity:1}}
+.board{position:relative}
+.fill.hide{opacity:0}
+.fill.flow{background-color:transparent!important;animation:flow linear both}
+.fill.right{background-image:linear-gradient(to right,var(--fc) 0 33.4%,transparent 40%);background-size:300% 100%;--p0:100% 0;--p1:0 0}
+.fill.left{background-image:linear-gradient(to left,var(--fc) 0 33.4%,transparent 40%);background-size:300% 100%;--p0:0 0;--p1:100% 0}
+.fill.down{background-image:linear-gradient(to bottom,var(--fc) 0 33.4%,transparent 40%);background-size:100% 300%;--p0:0 100%;--p1:0 0}
+.fill.up{background-image:linear-gradient(to top,var(--fc) 0 33.4%,transparent 40%);background-size:100% 300%;--p0:0 0;--p1:0 100%}
+@keyframes flow{from{background-position:var(--p0)}to{background-position:var(--p1)}}
+.num{position:absolute;z-index:1;left:19%;top:19%;font-family:var(--f-disp);font-weight:900;font-size:clamp(13px,4vw,19px);
+  color:rgba(0,0,0,.55);width:62%;aspect-ratio:1;border-radius:50%;background:rgba(255,255,255,.6);
+  display:flex;align-items:center;justify-content:center}
+.cell.glow .fill{animation:glow .5s ease}
+@keyframes glow{0%{filter:none}35%{filter:brightness(1.25) saturate(1.2)}100%{filter:none}}
+.cell.hint{box-shadow:inset 0 0 0 3px var(--accent);animation:blink 1s ease-in-out infinite}
+@keyframes blink{50%{box-shadow:inset 0 0 0 3px transparent}}
+.ctrl{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.rules{font-size:13px;color:var(--mute);line-height:1.75;margin:0;padding-left:1.2em}
+.band{position:fixed;left:0;right:0;bottom:0;background:var(--band);
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
+  box-shadow:0 -6px 24px rgba(0,0,0,.08);transform:translateY(110%);transition:transform .35s cubic-bezier(.3,1.2,.5,1)}
+.band.show{transform:none}
+.band-in{max-width:440px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.band b{font-family:var(--f-disp);font-weight:900;font-size:22px;color:var(--accent);display:block}
+.band small{color:var(--mute);font-size:13px}
+.band button{background:var(--accent);color:var(--accent-ink);font-weight:700;padding:12px 22px}
+@media (prefers-reduced-motion:reduce){.fill.flow,.cell.glow .fill,.cell.hint{animation:none}.band{transition:none}}
+</style>
+
+<div class="app">
+  <header>
+    <h1>のびしろ</h1>
+    <div class="stage">
+      <button class="icon" id="prev" aria-label="前のステージ">◀</button>
+      <b id="stageLabel">ステージ 1</b>
+      <button class="icon" id="nextSt" aria-label="次のステージ">▶</button>
+    </div>
+  </header>
+  <div class="count" id="count" aria-label="置ける数"></div>
+  <div class="msg" id="msg"></div>
+  <div class="board" id="board"></div>
+  <div class="ctrl">
+    <button id="undo">1手戻す</button>
+    <button id="reset">最初から</button>
+    <button id="hint">ヒント</button>
+  </div>
+  <ul class="rules">
+    <li>丸の数だけ、空いたマスに置いて、全部埋めたらクリア。</li>
+    <li>置くと、上下左右に、壁か色のマスにぶつかるまで伸びる。</li>
+    <li>先に伸びた色は、あとから置いたものの壁になる。</li>
+  </ul>
+</div>
+<div class="band" id="band" aria-live="polite">
+  <div class="band-in">
+    <div><b>クリア</b><small id="bandTxt">ステージ 1</small></div>
+    <button id="bandNext">次へ</button>
+  </div>
+</div>
+
+<script>
+// ステージごとに変わる配色(テーマなし)
+const PALETTES=[
+  ["#f09a86","#f5c96d","#8fcaa5","#7fb2dc","#b79ddb","#ec9fc0","#8ccbc3","#e2b98c"],
+  ["#5aa9a0","#9fd0c7","#f3b562","#f06c60","#8c6fb2","#5c88c4","#e8d27a","#c97b9e"],
+  ["#7e9cd8","#a7c7e7","#f2a7b8","#f6d38e","#9ccc9c","#c5a3e0","#f4b08a","#83c5d6"],
+  ["#d77a61","#e9b872","#90a959","#6d9dc5","#a77ec4","#e08aa3","#5fb4a2","#c9a77c"],
+  ["#4f86c6","#66c2a5","#fc8d62","#e78ac3","#a6d854","#ffd92f","#8da0cb","#e5c494"],
+  ["#c08497","#f7af9d","#f7e3af","#b0d0d3","#8fb8de","#a7a5c6","#9fc6a1","#e4b363"],
+  // やさしい淡色
+  ["#f6b8b8","#f9d8a8","#f7efa6","#c4e5b9","#b6dcef","#cbbfe9","#f2c4de","#bfe6e0"],
+  ["#ffc8a2","#ffe0a6","#d4f0c0","#a8e0d5","#a9c8f0","#d6b8ec","#f7b8c8","#e8d8b8"],
+  ["#e9b8c9","#f4cfb0","#efe2a2","#b9dcc0","#a9d0e0","#c2c0e8","#e0b8e0","#d6e3b0"],
+  ["#b8d8f0","#c8e8d8","#f0e0b8","#f0c8c0","#d8c8f0","#b8e0e8","#e8d0e0","#d0e8b8"],
+  ["#f3c1c6","#f8dcc0","#fbeec1","#d7ecc7","#c1e1ec","#c9cdee","#e6c6ea","#f0d6d0"],
+  ["#c9e4de","#c6def1","#dbcdf0","#f2c6de","#f7d9c4","#faedcb","#d8e2a8","#bcd8c8"],
+  // ぱっと鮮やか
+  ["#ff5c5c","#ffb020","#ffe14d","#3ecf6e","#2fa8ff","#7b61ff","#ff5fa2","#18c9c0"],
+  ["#ff6b35","#2ec4b6","#e71d36","#ffbf00","#3a86ff","#8338ec","#06d6a0","#f7c59f"],
+  ["#ef476f","#ffd166","#06d6a0","#118ab2","#f78c6b","#9b5de5","#00bbf9","#f15bb5"],
+  ["#fb5607","#ffbe0b","#ff006e","#8338ec","#3a86ff","#38b000","#00c2d1","#ff8fab"],
+  ["#e63946","#f4a261","#2a9d8f","#e9c46a","#457b9d","#ff70a6","#70d6ff","#90be6d"],
+  ["#ff477e","#ffb703","#219ebc","#8ac926","#ff7b00","#6a4c93","#1982c4","#00b4a6"],
+  // 落ち着いたくすみ
+  ["#b5838d","#e5989b","#ffb4a2","#6d6875","#a3b18a","#8e9aaf","#cbc0d3","#ffcdb2"],
+  ["#a98467","#adc178","#6c584c","#c9ada7","#9a8c98","#8ab0ab","#d4a373","#dde5b6"],
+  ["#8d99ae","#b8a9c9","#c9b79c","#a3c4bc","#d6a2ad","#7d8f69","#c08552","#9fa0c3"],
+  ["#9c6644","#b08968","#ddb892","#7f5539","#a5a58d","#6b705c","#b7b7a4","#cb997e"],
+  ["#84a59d","#f28482","#f5cac3","#f6bd60","#a2836e","#7c9eb2","#b9a394","#9d8189"],
+  ["#6b9080","#a4c3b2","#c38e70","#b5a8c2","#8d8daa","#d4b499","#a7a38f","#cce3de"],
+  // 同じ色味の濃淡
+  ["#b3d7ff","#3876bd","#8cc2f5","#4a8fd6","#d7ebff","#66a8e8","#c4dff8","#9fc9f0"],
+  ["#c5e6b0","#4c8f3f","#a3d48a","#64a852","#e3f4d7","#82c06b","#d4eec4","#b4dd9d"],
+  ["#ffc2d4","#c94a74","#ff9fbc","#e05f8a","#ffe0ea","#f47ea3","#ffd1df","#ffb0c8"],
+  ["#ffd0a3","#d9681e","#ffb574","#f07f2f","#ffe8d1","#ff9a4d","#ffdcb8","#ffc28a"],
+  ["#d6c6ff","#7254bd","#bda5f5","#8a6cd4","#ece4ff","#a387e6","#e0d4ff","#c9b5fa"],
+  ["#b0e6df","#2b8f83","#84d4ca","#3ea89b","#d9f4f1","#5bbfb3","#c4ede8","#9fdcd4"]
+];
+const STEP_TOTAL=120;
+// 触感：Androidはvibrate、iPhoneはスイッチ部品の触感を借りる
+const hapLabel=document.createElement("label");
+hapLabel.innerHTML='<input type="checkbox" switch>';
+hapLabel.setAttribute("aria-hidden","true");
+Object.assign(hapLabel.style,{position:"fixed",left:"-9999px",opacity:"0",pointerEvents:"none"});
+document.body.appendChild(hapLabel);
+function haptic(){try{if(navigator.vibrate)navigator.vibrate(12);else hapLabel.click()}catch(e){}} // 端まで伸びるのにかかる時間(ms)
+const $=id=>document.getElementById(id);
+// やさしい淡色5種類と落ち着いたくすみ5種類を、交互に使う
+const PAL_ORDER=[6,18,7,19,8,20,10,22,11,23];
+let stage=1,cleared=0,N=5,walls=[],limit=0,sol=[],moves=[],busy=false,pal=PALETTES[0];
+try{cleared=+localStorage.getItem("nobishiro-cleared")||0;stage=cleared+1}catch(e){}
+
+function cfg(s){ if(s<=20)return{n:5,ob:4}; if(s<=50)return{n:6,ob:6}; return{n:7,ob:8}; }
+function rng(seed){return()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function spread(own,i,k){ // 盤面・距離・向き
+  const out=own.slice(),info={}; out[i]=k; info[i]={d:0,dir:"o"}; const r=Math.floor(i/N),c=i%N;
+  for(const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){
+    let rr=r+dr,cc=c+dc,d=1;
+    while(rr>=0&&rr<N&&cc>=0&&cc<N){const j=rr*N+cc; if(out[j]!==-1)break; out[j]=k;
+      info[j]={d:d++,dir:dr===1?"down":dr===-1?"up":dc===1?"right":"left"}; rr+=dr;cc+=dc;}
+  }
+  return{out,info};
+}
+const base=()=>walls.map(w=>w?-2:-1);
+function generate(s){
+  const c=cfg(s); N=c.n; const R=rng(s*7919+13);
+  pal=PALETTES[PAL_ORDER[(s-1)%PAL_ORDER.length]];
+  const lo=3+(N-5), hi=4+(N-5)*2;
+  for(let tries=0;tries<300;tries++){
+    walls=Array(N*N).fill(false);
+    let k=0; while(k<c.ob){const x=Math.floor(R()*N*N); if(!walls[x]){walls[x]=true;k++}}
+    let best=null;
+    for(let t=0;t<400;t++){
+      let own=base(),seq=[];
+      while(own.includes(-1)){
+        const e=[];own.forEach((v,i)=>{if(v===-1)e.push(i)});
+        const i=e[Math.floor(R()*e.length)]; own=spread(own,i,seq.length).out; seq.push(i);
+        if(best&&seq.length>=best.length)break;
+      }
+      if(!own.includes(-1)&&(!best||seq.length<best.length))best=seq;
+    }
+    if(best&&best.length>=lo&&best.length<=hi){limit=best.length;sol=best;return}
+  }
+}
+function stateOf(ms){let o=base();ms.forEach((i,k)=>{o=spread(o,i,k).out});return o}
+// 残りの数で埋めきれるか(ヒント用)。見つかれば次の1手を返す
+function findNext(own,rem,memo=new Map()){
+  if(!own.includes(-1))return -2;
+  if(rem===0)return -1;
+  const key=own.map(v=>v===-1?0:1).join("")+rem;
+  if(memo.has(key))return memo.get(key);
+  let ans=-1;
+  for(let i=0;i<own.length;i++){ if(own[i]!==-1)continue;
+    if(findNext(spread(own,i,0).out,rem-1,memo)!==-1){ans=i;break}
+  }
+  memo.set(key,ans);return ans;
+}
+function color(k){return pal[k%pal.length]}
+function render(anim){
+  const own=stateOf(moves), b=$("board");
+  b.style.gridTemplateColumns=`repeat(${N},1fr)`; b.style.gridTemplateRows=`repeat(${N},1fr)`; b.innerHTML="";
+  const maxD=anim?Math.max(1,...Object.values(anim).map(a=>a.d)):1, armLen={};
+  if(anim)Object.values(anim).forEach(a=>{if(a.dir!=="o")armLen[a.dir]=Math.max(armLen[a.dir]||0,a.d)});
+  own.forEach((v,i)=>{
+    const d=document.createElement("div"); d.className="cell"; d.dataset.k=v;
+    if(v===-2)d.classList.add("wall");
+    else if(v===-1){d.classList.add("empty");d.onclick=()=>tap(i)}
+    else{
+      const f=document.createElement("div"); f.className="fill"; f.style.backgroundColor=color(v);
+      if(anim&&anim[i]){
+        const a=anim[i];
+        if(a.dir==="o")f.classList.add("go");
+        else{
+          // 水の流れ：じわっと始まり、途中は速く、端でやさしく止まる
+          const L=armLen[a.dir], T=STEP_TOTAL*(0.5+0.5*L/maxD);
+          const ease=x=>x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;
+          const s=T*ease((a.d-1)/L), e=T*ease(a.d/L);
+          f.classList.add("flow",a.dir); f.style.setProperty("--fc",color(v));
+          const D=Math.max(40,e-s)/0.6; // 色の先頭がマスを渡るのは動きの後半6割
+          f.style.animationDuration=D+"ms"; f.style.animationDelay=(s-0.4*D)+"ms";
+        }
+      }
+      d.appendChild(f);
+      const k=moves.indexOf(i); if(k>=0){const n=document.createElement("span");n.className="num";n.textContent=k+1;d.appendChild(n)}
+    }
+    b.appendChild(d);
+  });
+  $("count").innerHTML=Array.from({length:limit},(_,k)=>`<span class="dot" style="${k<moves.length?`background:${color(k)}`:""}"></span>`).join("");
+  const full=!own.includes(-1), left=limit-moves.length;
+  $("msg").textContent=full?"":left===0?"埋まりきらなかった…1手戻してみよう":"";
+  $("undo").disabled=moves.length===0||busy;
+  $("stageLabel").textContent=`ステージ ${stage}`;
+  $("prev").disabled=stage<=1; $("nextSt").disabled=stage>cleared;
+  return full;
+}
+function drawBars(anim,own){
+  const b=$("board"),cells=b.children; let o=-1; const arms={};
+  for(const j in anim){const a=anim[j]; if(a.dir==="o")o=+j; else if(!arms[a.dir]||a.d>arms[a.dir].d)arms[a.dir]={d:a.d,j:+j}}
+  if(o<0)return; const col=color(own[o]); const maxD=Math.max(1,...Object.values(arms).map(a=>a.d));
+  let end=0;
+  for(const dir in arms){
+    const A=cells[o],B=cells[arms[dir].j];
+    const l=Math.min(A.offsetLeft,B.offsetLeft),t=Math.min(A.offsetTop,B.offsetTop);
+    const r=Math.max(A.offsetLeft+A.offsetWidth,B.offsetLeft+B.offsetWidth),btm=Math.max(A.offsetTop+A.offsetHeight,B.offsetTop+B.offsetHeight);
+    const bar=document.createElement("div"); bar.className="bar "+dir;
+    Object.assign(bar.style,{left:l+"px",top:t+"px",width:(r-l)+"px",height:(btm-t)+"px"});
+    bar.style.setProperty("--fc",col);
+    const dur=Math.round(STEP_TOTAL*(0.45+0.55*arms[dir].d/maxD)); end=Math.max(end,dur);
+    bar.style.animationDuration=dur+"ms"; bar.style.animationDelay="60ms";
+    b.appendChild(bar);
+  }
+  setTimeout(()=>{
+    [...b.querySelectorAll(".fill.hide")].forEach(f=>f.classList.remove("hide"));
+    b.querySelectorAll(".bar").forEach(x=>x.remove());
+  },end+80);
+}
+function tap(i){
+  if(busy||moves.length>=limit)return;
+  const {info}=spread(stateOf(moves),i,moves.length);
+  moves.push(i); haptic();
+  if(render(info)){busy=true;setTimeout(win,STEP_TOTAL+250)}
+}
+function win(){
+  // 置いた順に光る
+  const cells=[...$("board").children];
+  moves.forEach((_,k)=>setTimeout(()=>{
+    cells.forEach(c=>{if(+c.dataset.k===k){c.classList.remove("glow");void c.offsetWidth;c.classList.add("glow")}});
+  },k*280));
+  if(stage>cleared){cleared=stage;try{localStorage.setItem("nobishiro-cleared",cleared)}catch(e){}}
+  setTimeout(()=>{
+    $("bandTxt").textContent=`ステージ ${stage}・${limit}個で埋まりました`;
+    $("band").classList.add("show"); busy=false; $("nextSt").disabled=false;
+  },moves.length*280+400);
+}
+function load(s){stage=s;$("band").classList.remove("show");busy=false;generate(s);moves=[];render()}
+$("undo").onclick=()=>{if(busy)return;moves.pop();render()};
+$("reset").onclick=()=>{if(busy)return;moves=[];render()};
+$("prev").onclick=()=>load(stage-1);
+$("nextSt").onclick=()=>load(stage+1);
+$("bandNext").onclick=()=>load(stage+1);
+$("hint").onclick=()=>{
+  if(busy)return;
+  // 埋めきれる所まで自動で戻す
+  let back=0;
+  while(findNext(stateOf(moves),limit-moves.length)===-1&&moves.length){moves.pop();back++}
+  const own=stateOf(moves); let next=findNext(own,limit-moves.length);
+  if(next<0){moves=[];next=sol[0]}
+  render();
+  $("board").children[next].classList.add("hint");
+  $("msg").textContent=back?`${back}手戻しました。光っている所に置いてみよう`:"光っている所に置いてみよう";
+};
+load(stage);
+</script>
+
+</body></html>

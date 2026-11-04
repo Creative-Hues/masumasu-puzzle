@@ -1,0 +1,977 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>よつつじ</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700&display=swap">
+<style>
+/* Layout: one column play surface — stage header, board card with side circle gutters, three-button tray, rules underneath */
+:root {
+  --bg: #eef0f4;
+  --surface: #ffffff;
+  --cell: #e4e7ee;
+  --peg: #bcc1cc;
+  --ink: #22252d;
+  --muted: #6a7080;
+  --line: #d5d9e2;
+  --c0: #e0464e; --c1: #3a5fe0; --c2: #35a542; --c3: #e3a10f; --c4: #b04fc8; --c5: #17a6cf;
+  --font: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic", system-ui, sans-serif;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14161b; --surface: #1d2027; --cell: #2a2e37; --peg: #555b68; --ink: #e9ebf1; --muted: #9ba1ae; --line: #343944;
+    --c0: #f2646b; --c1: #6f8cf7; --c2: #52c25e; --c3: #f2b63c; --c4: #cd7be3; --c5: #3cc3ea;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14161b; --surface: #1d2027; --cell: #2a2e37; --peg: #555b68; --ink: #e9ebf1; --muted: #9ba1ae; --line: #343944;
+  --c0: #f2646b; --c1: #6f8cf7; --c2: #52c25e; --c3: #f2b63c; --c4: #cd7be3; --c5: #3cc3ea;
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--font); font-weight: 500;
+  -webkit-tap-highlight-color: transparent;
+}
+.app {
+  max-width: 560px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 16px 28px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.stage-name { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.stage-name h1 { margin: 0; white-space: nowrap; font-size: 1.6rem; font-weight: 700; letter-spacing: 0.02em; font-variant-numeric: tabular-nums; }
+.tag { font-size: 0.72rem; color: var(--muted); border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; letter-spacing: 0.08em; white-space: nowrap; }
+.size { font-size: 0.85rem; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+button {
+  white-space: nowrap;
+  font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 12px; padding: 10px 14px; cursor: pointer; font-weight: 700; font-size: 0.95rem;
+  touch-action: manipulation;
+}
+button:disabled { opacity: 0.4; cursor: default; }
+button:focus-visible { outline: 3px solid var(--c1); outline-offset: 2px; }
+button:active:not(:disabled) { transform: translateY(1px); }
+.board-card {
+  position: relative; background: var(--surface); border-radius: var(--radius);
+  padding-block: 14px; display: flex; justify-content: center;
+}
+#board { display: block; touch-action: none; user-select: none; -webkit-user-select: none; }
+.board-wrap { width: 100%; display: flex; justify-content: center; }
+.status { display: flex; justify-content: center; gap: 18px; font-size: 0.9rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+.status b { color: var(--ink); font-weight: 700; }
+.tray { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.rules { font-size: 0.9rem; line-height: 1.75; color: var(--muted); margin: 0; padding-left: 1.2em; }
+.rules li::marker { color: var(--peg); }
+.overlay {
+  position: absolute; inset: 0; border-radius: var(--radius);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px);
+  text-align: center; padding: 16px;
+}
+.overlay h2 { margin: 0; font-size: 2rem; font-weight: 700; letter-spacing: 0.06em; }
+.overlay p { margin: 0; color: var(--muted); }
+.overlay .row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+.primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.clear-in { animation: rise 0.35s ease-out both; }
+@keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.loading p { font-size: 0.95rem; }
+.dots { display: flex; gap: 6px; }
+.dots span { width: 9px; height: 9px; border-radius: 50%; background: var(--peg); animation: blink 1s infinite ease-in-out; }
+.dots span:nth-child(1) { background: var(--c0); }
+.dots span:nth-child(2) { background: var(--c1); animation-delay: 0.15s; }
+.dots span:nth-child(3) { background: var(--c2); animation-delay: 0.3s; }
+@keyframes blink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+/* stage list */
+.list-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.list-head h1 { margin: 0; font-size: 1.4rem; font-weight: 700; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr)); gap: 10px; }
+.grid button { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 10px 4px; font-variant-numeric: tabular-nums; }
+.grid button .num { font-size: 1.15rem; }
+.grid button .sz { font-size: 0.7rem; color: var(--muted); font-weight: 500; }
+.grid button.cleared { background: var(--cell); border-color: transparent; }
+.grid button.next { border: 2px solid var(--ink); }
+.list-note { margin: 0; font-size: 0.85rem; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) {
+  .clear-in, .dots span { animation: none; }
+}
+</style>
+
+<div class="app" id="game-view">
+  <div class="top">
+    <div class="stage-name">
+      <h1 id="stage-title">ステージ 1</h1>
+      <div class="meta"><span class="size" id="stage-size">4×4</span><span class="tag">よつつじ 試作</span></div>
+    </div>
+    <button id="btn-list" type="button">一覧</button>
+  </div>
+
+  <div class="board-card" id="board-card">
+    <div class="board-wrap" id="board-wrap"><canvas id="board" aria-label="パズルの 盤面"></canvas></div>
+    <div class="overlay loading" id="loading" hidden>
+      <div class="dots"><span></span><span></span><span></span></div>
+      <p>問題を 作っています。</p>
+    </div>
+    <div class="overlay" id="clear" hidden>
+      <h2>クリア。</h2>
+      <p id="clear-msg">ステージ 1 を クリアした。</p>
+      <div class="row">
+        <button id="btn-next" class="primary" type="button">次の ステージへ</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="status" aria-live="polite">
+    <span>つないだ 線 <b id="st-lines">0/2</b></span>
+    <span>埋まった マス <b id="st-cells">0/16</b></span>
+  </div>
+
+  <div class="tray">
+    <button id="btn-undo" type="button">1手 戻す</button>
+    <button id="btn-reset" type="button">リセット</button>
+    <button id="btn-hint" type="button">ヒント</button>
+  </div>
+
+  <ul class="rules">
+    <li>左の 円から なぞって、右の 円の どれかに つなぐ。</li>
+    <li>線は 同じ 色の マスを 全部 通る。</li>
+    <li>線は 交差しない。空白は 残さない。</li>
+    <li>＋ の マスだけは 交差できる。縦と 横に、ちがう 色の 線を 1本ずつ まっすぐ 通す。</li>
+    <li>左の 円を タップすると、その 色の 線が 消える。</li>
+  </ul>
+</div>
+
+<div class="app" id="list-view" hidden>
+  <div class="list-head">
+    <h1>ステージ 一覧</h1>
+    <button id="btn-back" type="button">もどる</button>
+  </div>
+  <p class="list-note">クリアした ステージは 何度でも 遊べる。</p>
+  <div class="grid" id="stage-grid"></div>
+</div>
+
+
+<script id="engine">
+// ===== Puzzle engine v2: crossings (bridges) + generator + solver =====
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function shuffleArr(a, rand) {
+  for (let i = a.length - 1; i > 0; i--) { const j = (rand() * (i + 1)) | 0; const t = a[i]; a[i] = a[j]; a[j] = t; }
+  return a;
+}
+
+function stageParams(s) {
+  let n, k;
+  if (s <= 3) { n = 4; k = 2; }
+  else if (s <= 10) { n = 5; k = 2; }
+  else if (s <= 20) { n = 5; k = 3; }
+  else if (s <= 35) { n = 6; k = 3; }
+  else if (s <= 55) { n = 6; k = 4; }
+  else if (s <= 80) { n = 7; k = 4; }
+  else if (s <= 110) { n = 7; k = 5; }
+  else if (s <= 150) { n = 8; k = 5; }
+  else { n = 8; k = 6; }
+  let b = 0;
+  if (s <= 20) b = 1;
+  else if (s > 20 && s <= 55) b = s % 2 === 0 ? 2 : 1;
+  else if (s > 55) b = s % 2 === 0 ? 3 : 2;
+  const extra = Math.max(0, 0.3 - (s - 1) * 0.005);
+  return { n, k, b, extra };
+}
+
+// Lane graph: every cell is a node; a bridge cell's node is its horizontal lane,
+// and an extra node N+i is its vertical lane.
+function buildLaneGraph(n, bridges) {
+  const N = n * n, B = bridges.length, M = N + B;
+  const bidx = new Int32Array(N).fill(-1);
+  bridges.forEach((x, i) => { bidx[x] = i; });
+  const cellOf = new Int32Array(M), other = new Int32Array(M).fill(-1), isV = new Uint8Array(M);
+  for (let i = 0; i < N; i++) cellOf[i] = i;
+  bridges.forEach((x, i) => { cellOf[N + i] = x; other[x] = N + i; other[N + i] = x; isV[N + i] = 1; });
+  const nodeFor = (y, horizontal) => (bidx[y] >= 0 && !horizontal ? N + bidx[y] : y);
+  const nb = [];
+  for (let v = 0; v < M; v++) {
+    const x = cellOf[v], r = (x / n) | 0, c = x % n, a = [];
+    const br = bidx[x] >= 0;
+    const allowH = !br || !isV[v], allowV = !br || isV[v] === 1;
+    if (allowV) { if (r > 0) a.push(nodeFor(x - n, false)); if (r < n - 1) a.push(nodeFor(x + n, false)); }
+    if (allowH) { if (c > 0) a.push(nodeFor(x - 1, true)); if (c < n - 1) a.push(nodeFor(x + 1, true)); }
+    nb.push(a);
+  }
+  return { n, N, M, nb, cellOf, other, bidx };
+}
+
+// Generic search. mode 'gen': random order, return first full cover.
+// mode 'diff': deterministic, return first full cover whose node assignment differs from intended.
+function search(G, k, starts, ends, cp, opt) {
+  const { M, nb, other } = G;
+  const isRE = new Uint8Array(M); for (const e of ends) isRE[e] = 1;
+  const occ = new Int8Array(M).fill(-1);
+  const heads = new Int32Array(k), done = new Uint8Array(k), need = new Int32Array(k);
+  for (let v = 0; v < M; v++) if (cp[v] >= 0) need[cp[v]]++;
+  const pathNodes = [];
+  for (let c = 0; c < k; c++) {
+    occ[starts[c]] = c; heads[c] = starts[c];
+    if (cp[starts[c]] === c) need[c]--;
+    pathNodes.push([starts[c]]);
+  }
+  const gen = opt.mode === 'gen', rand = opt.rand, limit = opt.limit, intended = opt.intended;
+  const headMark = new Int32Array(M), seen = new Int32Array(M), queue = new Int32Array(M);
+  let st = 0, nodes = 0, hit = false, result = null;
+
+  function canColorEnter(c, x) {
+    const ct = cp[x];
+    if (ct >= 0 && ct !== c) return false;
+    const o = other[x];
+    if (o >= 0 && occ[o] === c) return false;
+    return true;
+  }
+  function valid(c, t) {
+    if (occ[t] >= 0) return false;
+    if (!canColorEnter(c, t)) return false;
+    if (isRE[t] && need[c] - (cp[t] === c ? 1 : 0) !== 0) return false;
+    return true;
+  }
+  function prune() {
+    st++;
+    for (let c = 0; c < k; c++) if (!done[c]) headMark[heads[c]] = st;
+    for (let x = 0; x < M; x++) {
+      if (occ[x] >= 0) continue;
+      let emp = 0, hd = 0;
+      const ns = nb[x];
+      for (let q = 0; q < ns.length; q++) {
+        const y = ns[q];
+        if (occ[y] < 0) emp++;
+        else if (headMark[y] === st && canColorEnter(occ[y], x)) hd++;
+      }
+      if (isRE[x]) { if (emp + hd < 1) return false; }
+      else if (emp < 1 || emp + hd < 2) return false;
+    }
+    st++;
+    for (let x = 0; x < M; x++) {
+      if (occ[x] >= 0 || seen[x] === st) continue;
+      let qh = 0, qt = 0; queue[qt++] = x; seen[x] = st;
+      let re = 0, hmask = 0, cmask = 0;
+      while (qh < qt) {
+        const v = queue[qh++];
+        if (isRE[v]) re++;
+        if (cp[v] >= 0) cmask |= 1 << cp[v];
+        const ns = nb[v];
+        for (let q = 0; q < ns.length; q++) {
+          const y = ns[q];
+          if (occ[y] < 0) { if (seen[y] !== st) { seen[y] = st; queue[qt++] = y; } }
+          else { const c = occ[y]; if (!done[c] && heads[c] === y) hmask |= 1 << c; }
+        }
+      }
+      if (re === 0 || hmask === 0) return false;
+      let pc = 0, m = hmask; while (m) { pc += m & 1; m >>= 1; }
+      if (pc < re) return false;
+      if (cmask & ~hmask) return false;
+    }
+    return true;
+  }
+  function dfs(remaining) {
+    if (++nodes > limit) { hit = true; return true; }
+    if (remaining === 0) {
+      for (let i = 0; i < M; i++) if (occ[i] < 0) return false;
+      if (gen) { result = { occ: Array.from(occ), paths: pathNodes.map(p => p.slice()) }; return true; }
+      for (let i = 0; i < M; i++) if (occ[i] !== intended[i]) { result = { occ: Array.from(occ) }; return true; }
+      return false;
+    }
+    let best = -1, bestCnt = 99;
+    for (let c = 0; c < k; c++) {
+      if (done[c]) continue;
+      let cnt = 0; const ns = nb[heads[c]];
+      for (let q = 0; q < ns.length; q++) if (valid(c, ns[q])) cnt++;
+      if (cnt === 0) return false;
+      if (cnt < bestCnt || (gen && cnt === bestCnt && rand() < 0.5)) { bestCnt = cnt; best = c; if (cnt === 1 && !gen) break; }
+    }
+    const h = heads[best], ns = nb[h], list = [];
+    for (let q = 0; q < ns.length; q++) if (valid(best, ns[q])) list.push(ns[q]);
+    if (gen) shuffleArr(list, rand);
+    for (const t of list) {
+      occ[t] = best; heads[best] = t; pathNodes[best].push(t);
+      const cpHit = cp[t] === best; if (cpHit) need[best]--;
+      const fin = isRE[t] === 1; if (fin) done[best] = 1;
+      let stop = false;
+      if (prune()) stop = dfs(remaining - (fin ? 1 : 0));
+      if (fin) done[best] = 0;
+      if (cpHit) need[best]++;
+      pathNodes[best].pop(); heads[best] = h; occ[t] = -1;
+      if (stop) return true;
+    }
+    return false;
+  }
+  dfs(k);
+  if (hit) return { status: 'limit', nodes };
+  if (result) return Object.assign({ status: 'found', nodes }, result);
+  return { status: 'none', nodes };
+}
+
+// No-crossing partition via random Hamiltonian path (backbite), cut into k left-to-right paths
+function genPartition(n, k, rand) {
+  const N = n * n, G = buildLaneGraph(n, []), nb = G.nb;
+  const p = new Int32Array(N), pos = new Int32Array(N);
+  let idx = 0;
+  for (let r = 0; r < n; r++) for (let cc = 0; cc < n; cc++) p[idx++] = r * n + (r % 2 === 0 ? cc : n - 1 - cc);
+  for (let i = 0; i < N; i++) pos[p[i]] = i;
+  function rev(a, b) { while (a < b) { const x = p[a], y = p[b]; p[a] = y; p[b] = x; pos[y] = a; pos[x] = b; a++; b--; } }
+  function step() {
+    if (rand() < 0.5) rev(0, N - 1);
+    const e = p[N - 1], ns = nb[e], t = ns[(rand() * ns.length) | 0];
+    if (t === p[N - 2]) return;
+    rev(pos[t] + 1, N - 1);
+  }
+  const minLen = Math.max(n, Math.floor(0.55 * N / k)), maxLen = Math.ceil(1.7 * N / k);
+  const endCol = k % 2 === 1 ? n - 1 : 0;
+  function findCuts() {
+    if (p[0] % n !== 0) { if (p[N - 1] % n === 0) rev(0, N - 1); else return null; }
+    if (p[N - 1] % n !== endCol) return null;
+    const Rc = [], Lc = [];
+    for (let j = 0; j < N - 1; j++) {
+      const a = p[j] % n, b = p[j + 1] % n;
+      if (a === n - 1 && b === n - 1) Rc.push(j); else if (a === 0 && b === 0) Lc.push(j);
+    }
+    const cuts = [];
+    function bt(prev, seg) {
+      if (seg === k - 1) { const len = N - 1 - prev; return len >= minLen && len <= maxLen; }
+      const list = seg % 2 === 0 ? Rc : Lc;
+      if (!list.length) return false;
+      const off = (rand() * list.length) | 0;
+      for (let q = 0; q < list.length; q++) {
+        const j = list[(q + off) % list.length], len = j - prev;
+        if (len < minLen || len > maxLen) continue;
+        cuts.push(j); if (bt(j, seg + 1)) return true; cuts.pop();
+      }
+      return false;
+    }
+    return bt(-1, 0) ? cuts.slice() : null;
+  }
+  for (let i = 0; i < N * 40; i++) step();
+  for (let tries = 0; tries < 400000; tries++) {
+    step();
+    const cuts = findCuts();
+    if (cuts) {
+      const paths = []; let s = 0;
+      for (let q = 0; q < k; q++) {
+        const e = q < k - 1 ? cuts[q] : N - 1;
+        const seg = Array.from(p.slice(s, e + 1));
+        if (seg[0] % n !== 0) seg.reverse();
+        paths.push(seg); s = e + 1;
+      }
+      paths.sort((a, b) => a[0] - b[0]);
+      return { G, bridges: [], nodePaths: paths };
+    }
+  }
+  return null;
+}
+
+// Partition with crossings: random starts/ends/bridges, then a randomized search for a full cover
+function genWithBridges(n, k, b, rand) {
+  const N = n * n;
+  const color = x => ((((x / n) | 0) + (x % n)) & 1);
+  for (let attempt = 0; attempt < 400; attempt++) {
+    const cand = [];
+    for (let r = 1; r < n - 1; r++) for (let c = 1; c < n - 1; c++) cand.push(r * n + c);
+    shuffleArr(cand, rand);
+    const br = [];
+    for (const x of cand) {
+      if (br.length >= b) break;
+      if (br.some(y => Math.abs(y - x) === n || (Math.abs(y - x) === 1 && ((y / n) | 0) === ((x / n) | 0)))) continue;
+      br.push(x);
+    }
+    if (br.length < b) continue;
+    const rows = []; for (let r = 0; r < n; r++) rows.push(r);
+    const sRows = shuffleArr(rows.slice(), rand).slice(0, k).sort((a, c) => a - c);
+    const eRows = shuffleArr(rows.slice(), rand).slice(0, k).sort((a, c) => a - c);
+    const starts = sRows.map(r => r * n), ends = eRows.map(r => r * n + n - 1);
+    let diff = 0;
+    for (let x = 0; x < N; x++) diff += color(x) === 0 ? 1 : -1;
+    for (const x of br) diff += color(x) === 0 ? 1 : -1;
+    let ed = 0;
+    for (const x of starts.concat(ends)) ed += color(x) === 0 ? 1 : -1;
+    if (diff * 2 !== ed) continue;
+    const G = buildLaneGraph(n, br);
+    const cp = new Int8Array(G.M).fill(-1);
+    const res = search(G, k, starts, ends, cp, { mode: 'gen', rand, limit: 6000 });
+    if (res.status !== 'found') continue;
+    const lens = res.paths.map(p => p.length);
+    const avg = G.M / k;
+    if (Math.min.apply(null, lens) < Math.max(n, 0.45 * avg)) continue;
+    // the left-to-right order must change somewhere (otherwise the crossings add nothing)
+    const endRowOf = res.paths.map(p => (G.cellOf[p[p.length - 1]] / n) | 0);
+    let swapped = false;
+    for (let i = 1; i < k; i++) if (endRowOf[i] < endRowOf[i - 1]) swapped = true;
+    if (!swapped) continue;
+    return { G, bridges: br, nodePaths: res.paths };
+  }
+  return null;
+}
+
+function generatePuzzle(stage) {
+  const { n, k, b, extra } = stageParams(stage);
+  const rand = mulberry32((stage * 2654435761) ^ 0x5bd1e995);
+  const N = n * n;
+  let part = null;
+  while (!part) part = b > 0 ? genWithBridges(n, k, b, rand) : genPartition(n, k, rand);
+  const { G, bridges, nodePaths } = part;
+  const M = G.M;
+  const starts = nodePaths.map(p => p[0]);
+  const ends = nodePaths.map(p => p[p.length - 1]);
+  const assign = new Int8Array(M);
+  nodePaths.forEach((p, c) => p.forEach(v => { assign[v] = c; }));
+  const isStart = new Uint8Array(N), isEnd = new Uint8Array(N);
+  starts.forEach(x => { isStart[x] = 1; }); ends.forEach(x => { isEnd[x] = 1; });
+  const isBridge = new Uint8Array(N); bridges.forEach(x => { isBridge[x] = 1; });
+  const cp = new Int8Array(M).fill(-1);
+  nodePaths.forEach((p, c) => {
+    const inner = p.slice(1, -1).filter(v => v < N && !isBridge[v]);
+    if (inner.length) { const v = inner[(rand() * inner.length) | 0]; cp[v] = c; }
+  });
+  const LIMIT = 60000;
+  let unique = false, totalNodes = 0;
+  for (let it = 0; it < N; it++) {
+    const res = search(G, k, starts, ends, cp, { mode: 'diff', intended: assign, limit: LIMIT });
+    totalNodes += res.nodes;
+    if (res.status === 'none') { unique = true; break; }
+    if (res.status === 'limit') break;
+    const diff = [], diffEnd = [];
+    for (let i = 0; i < N; i++) {
+      if (isBridge[i] || res.occ[i] === assign[i] || cp[i] >= 0 || isStart[i]) continue;
+      (isEnd[i] ? diffEnd : diff).push(i);
+    }
+    const pool = diff.length ? diff : diffEnd;
+    if (!pool.length) break;
+    const pick = pool[(rand() * pool.length) | 0];
+    cp[pick] = assign[pick];
+  }
+  if (extra > 0) {
+    const free = [];
+    for (let i = 0; i < N; i++) if (cp[i] < 0 && !isStart[i] && !isEnd[i] && !isBridge[i]) free.push(i);
+    let add = Math.round(extra * free.length);
+    while (add-- > 0 && free.length) {
+      const x = free.splice((rand() * free.length) | 0, 1)[0];
+      cp[x] = assign[x];
+    }
+  }
+  const slots = [0, 1, 3, 2, 4, 5].slice(0, k);
+  shuffleArr(slots, rand);
+  const paths = nodePaths.map(p => p.map(v => G.cellOf[v]));
+  return {
+    stage, n, k, paths, starts, ends, bridges,
+    cp: Array.from(cp.slice(0, N)), colorSlot: slots, unique, totalNodes
+  };
+}
+
+if (typeof module !== 'undefined') module.exports = { generatePuzzle, stageParams, search, buildLaneGraph };
+</script>
+<script>
+(function () {
+  'use strict';
+  const STORE_KEY = 'aimi-puzzle-proto-v1';
+  const G = 0.85; // circle gutter width in cells
+
+  // ---------- persistence ----------
+  function loadProgress() {
+    try {
+      const raw = localStorage.getItem(STORE_KEY);
+      if (raw) { const p = JSON.parse(raw); if (p && typeof p.maxCleared === 'number') return p; }
+    } catch (e) {}
+    return { maxCleared: 0, current: 1 };
+  }
+  function saveProgress() {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(progress)); } catch (e) {}
+  }
+  let progress = loadProgress();
+
+  // ---------- puzzle supply (worker with sync fallback) ----------
+  const cache = new Map(), waiting = new Map();
+  let worker = null;
+  try {
+    const src = document.getElementById('engine').textContent +
+      '\nself.onmessage=function(e){var pz=generatePuzzle(e.data);self.postMessage(pz);};';
+    worker = new Worker(URL.createObjectURL(new Blob([src], { type: 'text/javascript' })));
+    worker.onmessage = function (e) { deliver(e.data); };
+    worker.onerror = function () { worker = null; for (const s of waiting.keys()) syncMake(s); };
+  } catch (e) { worker = null; }
+  function deliver(pz) {
+    cache.set(pz.stage, pz);
+    const fns = waiting.get(pz.stage) || [];
+    waiting.delete(pz.stage);
+    fns.forEach(fn => fn(pz));
+  }
+  function syncMake(s) { setTimeout(function () { deliver(generatePuzzle(s)); }, 30); }
+  function getPuzzle(s) {
+    return new Promise(function (resolve) {
+      if (cache.has(s)) { resolve(cache.get(s)); return; }
+      if (waiting.has(s)) { waiting.get(s).push(resolve); return; }
+      waiting.set(s, [resolve]);
+      if (worker) worker.postMessage(s); else syncMake(s);
+    });
+  }
+
+  // ---------- paint-style color mixing (RYB) ----------
+  function rgb2ryb(r, g, b) {
+    const w = Math.min(r, g, b); r -= w; g -= w; b -= w;
+    const mg = Math.max(r, g, b);
+    let y = Math.min(r, g); r -= y; g -= y;
+    if (b > 0 && g > 0) { b /= 2; g /= 2; }
+    y += g; b += g;
+    const my = Math.max(r, y, b);
+    if (my > 0) { const k = mg / my; r *= k; y *= k; b *= k; }
+    return [r + w, y + w, b + w];
+  }
+  function ryb2rgb(r, y, b) {
+    const w = Math.min(r, y, b); r -= w; y -= w; b -= w;
+    const my = Math.max(r, y, b);
+    let g = Math.min(y, b); y -= g; b -= g;
+    if (b > 0 && g > 0) { b *= 2; g *= 2; }
+    r += y; g += y;
+    const mg = Math.max(r, g, b);
+    if (mg > 0) { const k = my / mg; r *= k; g *= k; b *= k; }
+    return [r + w, g + w, b + w];
+  }
+  function parseHex(h) { h = h.replace('#', ''); if (h.length === 3) h = h.split('').map(ch => ch + ch).join(''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16) / 255); }
+  function toHex(a) { return '#' + a.map(v => Math.round(Math.max(0, Math.min(1, v)) * 255).toString(16).padStart(2, '0')).join(''); }
+  const mixCache = new Map();
+  function mixColors(a, b) {
+    const key = a < b ? a + b : b + a;
+    if (mixCache.has(key)) return mixCache.get(key);
+    const A = rgb2ryb.apply(null, parseHex(a)), B = rgb2ryb.apply(null, parseHex(b));
+    const out = toHex(ryb2rgb((A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2));
+    mixCache.set(key, out);
+    return out;
+  }
+
+  // ---------- state ----------
+  let pz = null, stage = 1, lines = [], history = [], cleared = false;
+  let isStart, isEnd, endIndex, bidx;
+  const anims = [];
+  const $ = id => document.getElementById(id);
+  const canvas = $('board'), ctx = canvas.getContext('2d');
+  let cell = 40, gx = 30, gy = 6, W = 300, H = 300, dpr = 1;
+
+  function sizeLabel(s) {
+    const p = stageParams(s);
+    return p.n + '×' + p.n + '・' + p.k + '色' + (p.b ? '・＋' + p.b : '');
+  }
+
+  async function loadStage(s, keepLines) {
+    stage = s; cleared = false;
+    $('clear').hidden = true;
+    $('stage-title').textContent = 'ステージ ' + s;
+    $('stage-size').textContent = sizeLabel(s);
+    if (!cache.has(s)) $('loading').hidden = false;
+    const p = await getPuzzle(s);
+    if (stage !== s) return;
+    $('loading').hidden = true;
+    pz = p;
+    const N = pz.n * pz.n;
+    isStart = new Int8Array(N).fill(-1); isEnd = new Uint8Array(N); endIndex = new Int8Array(N).fill(-1); bidx = new Int8Array(N).fill(-1);
+    pz.starts.forEach((x, c) => { isStart[x] = c; });
+    pz.ends.forEach((x, j) => { isEnd[x] = 1; endIndex[x] = j; });
+    pz.bridges.forEach((x, i) => { bidx[x] = i; });
+    lines = (keepLines && keepLines.length === pz.k) ? keepLines.map(a => a.slice()) : pz.starts.map(() => []);
+    history = [];
+    progress.current = s; saveProgress();
+    layout(); render(); updateUI();
+    getPuzzle(s + 1); // prefetch
+  }
+
+  // ---------- geometry ----------
+  function layout() {
+    if (!pz) return;
+    const wrap = $('board-wrap');
+    W = Math.min(wrap.clientWidth, 520);
+    cell = W / (pz.n + 2 * G);
+    gx = G * cell; gy = cell * 0.08;
+    H = pz.n * cell + gy * 2;
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    canvas.width = Math.round(W * dpr); canvas.height = Math.round(H * dpr);
+  }
+  function center(i) { const n = pz.n; return [gx + (i % n + 0.5) * cell, gy + (Math.floor(i / n) + 0.5) * cell]; }
+  function leftCircle(c) { const r = Math.floor(pz.starts[c] / pz.n); return [gx * 0.46, gy + (r + 0.5) * cell]; }
+  function rightCircle(j) { const r = Math.floor(pz.ends[j] / pz.n); return [gx + pz.n * cell + gx * 0.54, gy + (r + 0.5) * cell]; }
+
+  // ---------- derived ----------
+  // occ: normal cells; oH / oV: horizontal / vertical lane of a crossing cell
+  function occupancy() {
+    const N = pz.n * pz.n;
+    const occ = new Int8Array(N).fill(-1), oH = new Int8Array(N).fill(-1), oV = new Int8Array(N).fill(-1);
+    lines.forEach((ln, c) => {
+      for (let i = 0; i < ln.length; i++) {
+        const x = ln[i];
+        if (bidx[x] >= 0) { (Math.abs(ln[i - 1] - x) === 1 ? oH : oV)[x] = c; }
+        else occ[x] = c;
+      }
+    });
+    return { occ, oH, oV };
+  }
+  function isFilled(O, x) { return bidx[x] >= 0 ? (O.oH[x] >= 0 && O.oV[x] >= 0) : O.occ[x] >= 0; }
+  function isConnected(c) { const ln = lines[c]; return ln.length > 0 && isEnd[ln[ln.length - 1]] === 1; }
+
+  // ---------- drawing ----------
+  function css(name) { return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+  function rr(x, y, w, h, r) {
+    ctx.beginPath();
+    if (ctx.roundRect) { ctx.roundRect(x, y, w, h, r); return; }
+    ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+    ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath();
+  }
+  function animProgress(type, key, now) {
+    const a = anims.find(z => z.type === type && z.key === key);
+    if (!a) return -1;
+    return Math.min(1, (now - a.t0) / a.dur);
+  }
+  function render(now) {
+    if (!pz) return;
+    now = now || performance.now();
+    const n = pz.n, N = n * n, O = occupancy();
+    const col = pz.colorSlot.map(s => css('--c' + s));
+    const cellBg = css('--cell'), peg = css('--peg'), surface = css('--surface');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+    const pad = Math.max(1.5, cell * 0.05), rad = cell * 0.16;
+    const lw = cell * 0.3;
+    for (let i = 0; i < N; i++) {
+      const x = gx + (i % n) * cell + pad, y = gy + Math.floor(i / n) * cell + pad, s = cell - pad * 2;
+      rr(x, y, s, s, rad); ctx.fillStyle = cellBg; ctx.fill();
+      if (bidx[i] >= 0) {
+        const full = O.oH[i] >= 0 && O.oV[i] >= 0;
+        if (full) {
+          let a = 0.6;
+          const t = animProgress('mix', i, now);
+          if (t >= 0) a = 0.6 * (1 - Math.pow(1 - t, 3));
+          ctx.globalAlpha = a; rr(x, y, s, s, rad); ctx.fillStyle = mixColors(col[O.oH[i]], col[O.oV[i]]); ctx.fill(); ctx.globalAlpha = 1;
+        }
+        // the + mark
+        const cx = x + s / 2, cy = y + s / 2, arm = s * 0.3, th = Math.max(2, cell * 0.08);
+        ctx.fillStyle = full ? surface : peg;
+        ctx.globalAlpha = full ? 0.55 : 1;
+        rr(cx - arm, cy - th / 2, arm * 2, th, th / 2); ctx.fill();
+        rr(cx - th / 2, cy - arm, th, arm * 2, th / 2); ctx.fill();
+        ctx.globalAlpha = 1;
+        continue;
+      }
+      const cp = pz.cp[i];
+      if (cp >= 0) {
+        ctx.globalAlpha = 0.38; rr(x, y, s, s, rad); ctx.fillStyle = col[cp]; ctx.fill();
+        ctx.globalAlpha = 0.9; ctx.lineWidth = Math.max(1.5, cell * 0.04); ctx.strokeStyle = col[cp];
+        rr(x + ctx.lineWidth / 2, y + ctx.lineWidth / 2, s - ctx.lineWidth, s - ctx.lineWidth, rad); ctx.stroke();
+        ctx.globalAlpha = 1;
+      } else if (O.occ[i] >= 0) {
+        ctx.globalAlpha = 0.14; rr(x, y, s, s, rad); ctx.fillStyle = col[O.occ[i]]; ctx.fill(); ctx.globalAlpha = 1;
+      }
+    }
+    // lines
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    function lineWidthFor(c) {
+      let w = lw;
+      const t = animProgress('flash', c, now);
+      if (t >= 0) w *= 1 + 0.35 * Math.sin(t * Math.PI * 2) * (1 - t);
+      return w;
+    }
+    lines.forEach((ln, c) => {
+      if (!ln.length) return;
+      const pts = [leftCircle(c)].concat(ln.map(center));
+      if (isConnected(c)) pts.push(rightCircle(endIndex[ln[ln.length - 1]]));
+      ctx.strokeStyle = col[c]; ctx.lineWidth = lineWidthFor(c);
+      ctx.beginPath(); ctx.moveTo(pts[0][0], pts[0][1]);
+      for (let q = 1; q < pts.length; q++) ctx.lineTo(pts[q][0], pts[q][1]);
+      ctx.stroke();
+    });
+    // crossings: the horizontal line passes over the vertical one
+    pz.bridges.forEach(b => {
+      const h = O.oH[b];
+      if (h < 0 || O.oV[b] < 0) return;
+      const x = gx + (b % n) * cell, y = gy + Math.floor(b / n) * cell, [cx, cy] = center(b);
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x + pad, y, cell - pad * 2, cell); ctx.clip();
+      ctx.lineCap = 'butt';
+      ctx.strokeStyle = surface; ctx.lineWidth = lineWidthFor(h) + cell * 0.14;
+      ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x + cell, cy); ctx.stroke();
+      ctx.restore();
+      ctx.save();
+      ctx.beginPath(); ctx.rect(x, y, cell, cell); ctx.clip();
+      ctx.lineCap = 'butt';
+      ctx.strokeStyle = col[h]; ctx.lineWidth = lineWidthFor(h);
+      ctx.beginPath(); ctx.moveTo(x, cy); ctx.lineTo(x + cell, cy); ctx.stroke();
+      ctx.restore();
+    });
+    // head dot while drawing
+    if (drag && drag.started && lines[drag.c].length) {
+      const ln = lines[drag.c], [hx, hy] = center(ln[ln.length - 1]);
+      ctx.fillStyle = col[drag.c]; ctx.beginPath(); ctx.arc(hx, hy, cell * 0.24, 0, Math.PI * 2); ctx.fill();
+    }
+    // left circles
+    const R = cell * 0.31;
+    pz.starts.forEach((x, c) => {
+      const [cx, cy] = leftCircle(c);
+      ctx.fillStyle = col[c]; ctx.beginPath(); ctx.arc(cx, cy, R, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = Math.max(2, cell * 0.06); ctx.strokeStyle = surface; ctx.stroke();
+    });
+    // right circles
+    const endColor = new Array(pz.k).fill(-1);
+    lines.forEach((ln, c) => { if (isConnected(c)) endColor[endIndex[ln[ln.length - 1]]] = c; });
+    pz.ends.forEach((x, j) => {
+      const [cx, cy] = rightCircle(j);
+      let r = R;
+      const t = animProgress('pop', j, now);
+      if (t >= 0 && endColor[j] >= 0) r = R * (1 + 0.28 * Math.sin(t * Math.PI));
+      ctx.fillStyle = endColor[j] >= 0 ? col[endColor[j]] : peg;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+      ctx.lineWidth = Math.max(2, cell * 0.06); ctx.strokeStyle = surface; ctx.stroke();
+    });
+  }
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let rafOn = false;
+  function animate(a) {
+    if (reduceMotion) { render(); return; }
+    for (let i = anims.length - 1; i >= 0; i--) if (anims[i].type === a.type && anims[i].key === a.key) anims.splice(i, 1);
+    a.t0 = performance.now(); anims.push(a);
+    if (!rafOn) { rafOn = true; requestAnimationFrame(tick); }
+  }
+  function tick(now) {
+    for (let i = anims.length - 1; i >= 0; i--) if (now - anims[i].t0 > anims[i].dur) anims.splice(i, 1);
+    render(now);
+    if (anims.length) requestAnimationFrame(tick); else { rafOn = false; render(); }
+  }
+
+  // ---------- UI state ----------
+  function updateUI() {
+    if (!pz) return;
+    const O = occupancy(), N = pz.n * pz.n;
+    let filled = 0; for (let i = 0; i < N; i++) if (isFilled(O, i)) filled++;
+    let conn = 0; for (let c = 0; c < pz.k; c++) if (isConnected(c)) conn++;
+    $('st-lines').textContent = conn + '/' + pz.k;
+    $('st-cells').textContent = filled + '/' + N;
+    $('btn-undo').disabled = cleared || history.length === 0;
+    $('btn-reset').disabled = cleared;
+    $('btn-hint').disabled = cleared;
+  }
+  function checkClear() {
+    const O = occupancy(), N = pz.n * pz.n;
+    for (let i = 0; i < N; i++) if (!isFilled(O, i)) return false;
+    for (let c = 0; c < pz.k; c++) if (!isConnected(c)) return false;
+    for (let i = 0; i < N; i++) if (pz.cp[i] >= 0 && O.occ[i] !== pz.cp[i]) return false;
+    return true;
+  }
+  function onClear() {
+    cleared = true;
+    if (stage > progress.maxCleared) progress.maxCleared = stage;
+    saveProgress();
+    lines.forEach((ln, c) => animate({ type: 'flash', key: c, dur: 700 }));
+    setTimeout(function () {
+      $('clear-msg').textContent = 'ステージ ' + stage + ' を クリアした。';
+      const el = $('clear'); el.hidden = false; el.classList.remove('clear-in'); void el.offsetWidth; el.classList.add('clear-in');
+      $('btn-next').focus({ preventScroll: true });
+    }, reduceMotion ? 0 : 450);
+    updateUI();
+  }
+  function snapshot() { return lines.map(a => a.slice()); }
+  function same(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  function commit(before) {
+    if (!same(before, lines)) { history.push(before); if (history.length > 300) history.shift(); }
+    render(); updateUI();
+    if (checkClear()) onClear();
+  }
+
+  // ---------- drawing input ----------
+  let drag = null;
+  function hit(ev) {
+    const rect = canvas.getBoundingClientRect();
+    const x = ev.clientX - rect.left, y = ev.clientY - rect.top, n = pz.n;
+    const r = Math.floor((y - gy) / cell), c = Math.floor((x - gx) / cell);
+    if (r < 0 || r >= n) return null;
+    if (c >= 0 && c < n) return { type: 'cell', i: r * n + c };
+    if (x < gx) {
+      for (let k = 0; k < pz.k; k++) if (Math.floor(pz.starts[k] / n) === r) return { type: 'left', c: k };
+    }
+    return null;
+  }
+  // can color c move from h into x?
+  function canEnter(c, h, x, O) {
+    if (isStart[x] >= 0 && isStart[x] !== c) return false;
+    if (bidx[x] >= 0) {
+      const horiz = Math.abs(x - h) === 1;
+      const lane = horiz ? O.oH : O.oV, otherLane = horiz ? O.oV : O.oH;
+      if (lane[x] >= 0) return false;
+      if (otherLane[x] === c) return false; // a line can't cross itself
+      return true;
+    }
+    if (O.occ[x] >= 0) return false;
+    const cp = pz.cp[x];
+    if (cp >= 0 && cp !== c) return false;
+    return true;
+  }
+  function stepToward(c, t) {
+    const n = pz.n;
+    for (let guard = 0; guard < n * 4; guard++) {
+      const ln = lines[c], h = ln[ln.length - 1];
+      if (h === t) return;
+      const own = ln.indexOf(t);
+      if (own >= 0) { ln.length = own + 1; return; }
+      const hr = Math.floor(h / n), hc = h % n, tr = Math.floor(t / n), tc = t % n;
+      const dr = tr - hr, dc = tc - hc, opts = [];
+      const vert = dr !== 0 ? h + Math.sign(dr) * n : -1, horz = dc !== 0 ? h + Math.sign(dc) : -1;
+      if (Math.abs(dr) >= Math.abs(dc)) { if (vert >= 0) opts.push(vert); if (horz >= 0) opts.push(horz); }
+      else { if (horz >= 0) opts.push(horz); if (vert >= 0) opts.push(vert); }
+      const straight = (bidx[h] >= 0 && ln.length >= 2) ? h + (h - ln[ln.length - 2]) : -1;
+      let moved = false;
+      const O = occupancy();
+      for (const nx of opts) {
+        const back = ln.indexOf(nx);
+        if (back >= 0) { ln.length = back + 1; moved = true; break; }
+        if (isConnected(c)) continue;
+        if (straight >= 0 && nx !== straight) continue; // go straight through a crossing
+        if (canEnter(c, h, nx, O)) {
+          ln.push(nx); moved = true;
+          if (isEnd[nx]) animate({ type: 'pop', key: endIndex[nx], dur: 320 });
+          if (bidx[nx] >= 0) {
+            const horiz = Math.abs(nx - h) === 1;
+            if ((horiz ? O.oV : O.oH)[nx] >= 0) animate({ type: 'mix', key: nx, dur: 450 });
+          }
+          break;
+        }
+      }
+      if (!moved) return;
+    }
+  }
+  canvas.addEventListener('pointerdown', function (ev) {
+    if (!pz || cleared) return;
+    const h = hit(ev);
+    if (!h) return;
+    let d = null;
+    if (h.type === 'left') d = { c: h.c, mode: 'circle', started: false };
+    else {
+      for (let c = 0; c < pz.k; c++) {
+        const ln = lines[c];
+        if (ln.length && ln[ln.length - 1] === h.i) { d = { c, mode: 'continue', started: true }; break; }
+      }
+      if (!d && isStart[h.i] >= 0) d = { c: isStart[h.i], mode: 'restart', started: false };
+    }
+    if (!d) return;
+    d.before = snapshot(); d.id = ev.pointerId; d.startCell = h.type === 'cell' ? h.i : -1;
+    drag = d;
+    canvas.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+    render();
+  });
+  canvas.addEventListener('pointermove', function (ev) {
+    if (!drag || ev.pointerId !== drag.id) return;
+    const h = hit(ev);
+    if (!h || h.type !== 'cell') return;
+    if (!drag.started) {
+      if (drag.mode === 'restart' && h.i === drag.startCell) return;
+      drag.started = true;
+      lines[drag.c] = [pz.starts[drag.c]];
+    }
+    stepToward(drag.c, h.i);
+    render(); updateUI();
+  });
+  function endDrag(ev) {
+    if (!drag || ev.pointerId !== drag.id) return;
+    const d = drag; drag = null;
+    if (d.mode === 'circle' && !d.started) lines[d.c] = [];
+    commit(d.before);
+  }
+  canvas.addEventListener('pointerup', endDrag);
+  canvas.addEventListener('pointercancel', endDrag);
+
+  // ---------- buttons ----------
+  $('btn-undo').addEventListener('click', function () {
+    if (!history.length || cleared) return;
+    lines = history.pop(); render(); updateUI();
+  });
+  $('btn-reset').addEventListener('click', function () {
+    if (cleared) return;
+    const before = snapshot();
+    lines = pz.starts.map(() => []);
+    commit(before);
+  });
+  $('btn-hint').addEventListener('click', function () {
+    if (cleared) return;
+    let target = -1;
+    for (let c = 0; c < pz.k; c++) if (!same(lines[c], pz.paths[c])) { target = c; break; }
+    if (target < 0) return;
+    const before = snapshot();
+    const tgt = pz.paths[target], cells = new Set(), lanes = {};
+    tgt.forEach((x, i) => {
+      if (bidx[x] >= 0) lanes[x] = Math.abs(tgt[i - 1] - x) === 1 ? 'H' : 'V';
+      else cells.add(x);
+    });
+    lines = lines.map((ln, c) => {
+      if (c === target) return tgt.slice();
+      for (let i = 0; i < ln.length; i++) {
+        const x = ln[i];
+        const clash = bidx[x] >= 0
+          ? (lanes[x] && lanes[x] === (Math.abs(ln[i - 1] - x) === 1 ? 'H' : 'V'))
+          : cells.has(x);
+        if (clash) return ln.slice(0, i);
+      }
+      return ln;
+    });
+    animate({ type: 'flash', key: target, dur: 700 });
+    animate({ type: 'pop', key: pz.ends.indexOf(tgt[tgt.length - 1]), dur: 320 });
+    const O = occupancy();
+    tgt.forEach(x => { if (bidx[x] >= 0 && O.oH[x] >= 0 && O.oV[x] >= 0) animate({ type: 'mix', key: x, dur: 450 }); });
+    commit(before);
+  });
+  $('btn-next').addEventListener('click', function () { loadStage(stage + 1); });
+  $('btn-list').addEventListener('click', showList);
+  $('btn-back').addEventListener('click', function () { $('list-view').hidden = true; $('game-view').hidden = false; layout(); render(); });
+
+  function showList() {
+    const grid = $('stage-grid'); grid.textContent = '';
+    const last = progress.maxCleared + 1;
+    for (let s = 1; s <= last; s++) {
+      const b = document.createElement('button');
+      b.type = 'button'; b.id = 'stage-btn-' + s;
+      if (s <= progress.maxCleared) b.classList.add('cleared');
+      if (s === last) b.classList.add('next');
+      const p = stageParams(s);
+      b.innerHTML = '<span class="num">' + s + '</span><span class="sz">' + p.n + '×' + p.n + '</span>';
+      b.setAttribute('aria-label', 'ステージ ' + s + (s <= progress.maxCleared ? ' クリア済み' : ''));
+      b.addEventListener('click', function () { $('list-view').hidden = true; $('game-view').hidden = false; loadStage(s); });
+      grid.appendChild(b);
+    }
+    $('game-view').hidden = true; $('list-view').hidden = false;
+    const cur = $('stage-btn-' + stage); if (cur) cur.scrollIntoView({ block: 'center' });
+  }
+
+  // ---------- theme + resize ----------
+  if (window.ResizeObserver) new ResizeObserver(function () { layout(); render(); }).observe($('board-wrap'));
+  else window.addEventListener('resize', function () { layout(); render(); });
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () { render(); });
+  new MutationObserver(function () { render(); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { layout(); render(); });
+
+  // ---------- boot ----------
+  const VERSION = 2;
+  function start(data) {
+    data = data || {};
+    let s = data.stage || progress.current || 1;
+    if (s > progress.maxCleared + 1) s = progress.maxCleared + 1;
+    if (s < 1) s = 1;
+    loadStage(s, data.v === VERSION && data.stage === s ? data.lines : null);
+  }
+  const hot = window.claude && window.claude.hot;
+  if (hot && hot.snapshot) { try { hot.snapshot(function () { return { v: VERSION, stage: stage, lines: lines }; }); } catch (e) {} }
+  if (hot && hot.ready) hot.ready(start); else start(hot && hot.data ? hot.data : {});
+})();
+</script>
+
+</body></html>
