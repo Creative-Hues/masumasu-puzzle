@@ -26,7 +26,7 @@
 .info { display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 16px; font-size: 14px; color: var(--mute); font-variant-numeric: tabular-nums; }
 .info b { color: var(--ink); margin-left: 2px; }
 .info span:empty { display: none; }
-.top:empty { display: none; }
+.top:empty, .bottom:empty { display: none; }
 .msg { text-align: center; font-size: 14px; color: var(--mute); min-height: 1.5em; margin-top: -8px; }
 .board-wrap { position: relative; }
 .rules-btn { align-self: center; font-size: 13px; padding: 4px 14px; }
@@ -49,7 +49,7 @@ html.fixed-screen #app { height: 100%; }
   flex: 1 1 0; min-height: 120px; container-type: size;
   display: flex; align-items: center; justify-content: center;
 }
-.app.play .board-wrap > .board { width: min(100cqw, 100cqh); }
+.app.play .board-wrap > .board { width: min(100cqw, calc(100cqh * var(--aspect, 1))); }
 /* 確認・ルール・クリアの帯が出ているあいだは、盤面が指を受け付けない(js/ui/play.js) */
 .board[inert] { pointer-events: none; }
 
@@ -184,3 +184,23 @@ html.fixed-screen #app { height: 100%; }
 .nb-num:empty { display: none; }
 .nb-cell.glow .nb-fill { animation: nb-glow .5s ease; }
 @keyframes nb-glow { 0% { filter: none; } 35% { filter: brightness(1.25) saturate(1.2); } 100% { filter: none; } }
+
+/* うつしえ */
+.board.utsushie { position: relative; aspect-ratio: var(--aspect); background: var(--tile); border-radius: 12px; touch-action: none; }
+.us-main, .us-hint { display: block; position: absolute; left: 0; top: 0; }
+.us-hint { pointer-events: none; animation: us-blink 1s ease-in-out infinite; }
+.us-main.glow { animation: us-glow .8s ease; }
+@keyframes us-glow { 0% { filter: none; } 40% { filter: brightness(1.18) saturate(1.15); } 100% { filter: none; } }
+@keyframes us-blink { 50% { opacity: .15; } }
+.us-drag { position: fixed; left: 0; top: 0; z-index: 15; pointer-events: none; }
+.us-tray { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 8px; }
+.us-piece {
+  padding: 6px; border-radius: 10px; background: var(--tile); touch-action: none; cursor: grab;
+  display: flex; align-items: center; justify-content: center;
+}
+.us-piece canvas { display: block; pointer-events: none; }
+.us-piece.lifted { opacity: .35; }
+.us-piece.placed { visibility: hidden; }
+.us-piece.hint { outline: 2px dashed var(--hc); outline-offset: 1px; animation: us-blink 1s ease-in-out infinite; }
+.us-piece.shake { animation: us-shake .3s ease; }
+@keyframes us-shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }

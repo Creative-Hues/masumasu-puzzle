@@ -26,6 +26,8 @@ const FILES = [
   'js/puzzles/nobishiro/logic.js',
   'js/puzzles/nobishiro/nobishiro.js',
   'js/puzzles/registry.js',
+  'js/puzzles/utsushie/logic.js',
+  'js/puzzles/utsushie/utsushie.js',
   'js/puzzles/trial/trial.js',
   'js/ui/home.js',
   'js/ui/play.js',

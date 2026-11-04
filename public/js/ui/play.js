@@ -37,6 +37,7 @@ export function playScreen(root, { store, go }, entry) {
           </div>
         </div>
       </div>
+      <div class="bottom"></div>
       <div class="ctrl">
         <button data-act="undo">1手戻す</button>
         <button data-act="reset">最初から</button>
@@ -64,19 +65,19 @@ export function playScreen(root, { store, go }, entry) {
 
   let stage = 1, inst = null, hints = createHintCounter(), busy = false, token = 0;
 
-  // 確認・ルール・クリアの帯が出ているあいだ(と、クリアの光り方のあいだ)は、盤面が指を受け付けない
+  // 確認・ルール・クリアの帯が出ているあいだ(と、クリアの光り方のあいだ)は、盤面とその上下の場所が指を受け付けない
   // inert をつけると、盤面の中の透明なスイッチ(触感用)も押されず、震えない
   // 閉じたあとも少しのあいだ受け付けず、「閉じる」などを押した指がそのまま盤面に届かないようにする
   const UNBLOCK_DELAY = 350;
   let unblockTimer = 0;
+  const playArea = () => [$('.board'), $('.top'), $('.bottom')];
   function setBoardBlocked(blocked) {
-    const board = $('.board');
     if (blocked) {
       clearTimeout(unblockTimer);
       unblockTimer = 0;
-      board.inert = true;
-    } else if (board.inert && !unblockTimer) {
-      unblockTimer = setTimeout(() => { unblockTimer = 0; board.inert = false; }, UNBLOCK_DELAY);
+      playArea().forEach(el => { el.inert = true; });
+    } else if ($('.board').inert && !unblockTimer) {
+      unblockTimer = setTimeout(() => { unblockTimer = 0; playArea().forEach(el => { el.inert = false; }); }, UNBLOCK_DELAY);
     }
   }
 
@@ -105,6 +106,7 @@ export function playScreen(root, { store, go }, entry) {
     confirmBox.hidden = true;
     msg.textContent = '';
     $('.top').innerHTML = '';
+    $('.bottom').innerHTML = '';
     $('.progress').textContent = '';
     const board = $('.board');
     board.innerHTML = '';
@@ -120,6 +122,7 @@ export function playScreen(root, { store, go }, entry) {
       colors: colorsFor(s),
       board,
       top: $('.top'),
+      bottom: $('.bottom'),
       sound: { place: sound.place, mistake: sound.mistake },
       tapCell: bindCellTap,
       setProgress: t => { if (my === token) $('.progress').textContent = t; },
