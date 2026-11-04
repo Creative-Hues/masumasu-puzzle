@@ -5,7 +5,7 @@
 //   #/list/<id>   ステージ一覧
 
 import { createStore, browserBackend } from './core/storage.js';
-import { sound, setSoundEnabled, unlockAudio } from './core/sound.js';
+import { sound, setSoundEnabled, setVolume, unlockAudio } from './core/sound.js';
 import { setHapticsEnabled } from './core/haptics.js';
 import { applyTheme } from './core/theme.js';
 import { findPuzzle } from './puzzles/registry.js';
@@ -20,6 +20,7 @@ let cleanup = null;
 
 const settings = store.settings;
 setSoundEnabled(settings.sound);
+setVolume(settings.volume);
 setHapticsEnabled(settings.haptics);
 applyTheme(settings.theme);
 

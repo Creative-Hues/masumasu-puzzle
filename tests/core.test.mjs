@@ -51,14 +51,14 @@ function memory(initial) {
 
 test('保存：空の状態から始められる', () => {
   const s = createStore(memory());
-  assert.deepEqual(s.settings, { sound: true, haptics: true, theme: 'auto' });
+  assert.deepEqual(s.settings, { sound: true, haptics: true, theme: 'auto', volume: 0.7 });
   assert.deepEqual(s.progress('nobishiro'), { maxCleared: 0, current: 1, skipped: [] });
 });
 
 test('保存：壊れたデータでも止まらない', () => {
   for (const bad of ['{こわれた', '42', '"x"', 'null', '{"settings":{"sound":"はい","theme":"青"},"puzzles":{"a":{"maxCleared":-3}}}']) {
     const s = createStore(memory(bad));
-    assert.deepEqual(s.settings, { sound: true, haptics: true, theme: 'auto' });
+    assert.deepEqual(s.settings, { sound: true, haptics: true, theme: 'auto', volume: 0.7 });
     assert.deepEqual(s.progress('a'), { maxCleared: 0, current: 1, skipped: [] });
   }
 });
@@ -119,4 +119,14 @@ test('保存：ルールの項目がない古いデータでも動く', () => {
   assert.equal(s.hasSeenRules('majikiri'), false);
   const bad = createStore(memory(JSON.stringify({ rulesSeen: 'majikiri' })));
   assert.equal(bad.hasSeenRules('majikiri'), false);
+});
+
+test('保存：音量を覚え、おかしな値は使わない', () => {
+  const mem = memory();
+  const s = createStore(mem);
+  s.setSetting('volume', 0.35);
+  assert.equal(createStore(memory(mem.raw())).settings.volume, 0.35);
+  for (const bad of [-1, 2, '0.5', null]) {
+    assert.equal(createStore(memory(JSON.stringify({ settings: { volume: bad } }))).settings.volume, 0.7);
+  }
 });

@@ -1,5 +1,5 @@
 // 端末への保存。設定と、パズルごとの進み具合を1つの入れ物にまとめる
-// 形：{ v, settings: { sound, haptics, theme }, puzzles: { [id]: { maxCleared, current, skipped } }, rulesSeen }
+// 形：{ v, settings: { sound, haptics, theme, volume }, puzzles: { [id]: { maxCleared, current, skipped } }, rulesSeen }
 //   maxCleared … どこまでクリアしたか(飛ばしたものも含む。1本道なので、それより前は全部済み)
 //   current    … 今のステージ
 //   skipped    … 飛ばしたステージの番号
@@ -9,7 +9,8 @@ export const STORE_KEY = 'masumasu';
 export const STORE_VERSION = 1;
 export const THEME_MODES = ['auto', 'light', 'dark'];
 
-const DEFAULT_SETTINGS = { sound: true, haptics: true, theme: 'auto' };
+// volume は音量のつまみ(0〜1)。0.7で、音を作ったときの大きさ
+const DEFAULT_SETTINGS = { sound: true, haptics: true, theme: 'auto', volume: 0.7 };
 
 function blank() {
   return { v: STORE_VERSION, settings: { ...DEFAULT_SETTINGS }, puzzles: {}, rulesSeen: [] };
@@ -37,6 +38,7 @@ export function normalize(raw) {
   if (typeof s.sound === 'boolean') d.settings.sound = s.sound;
   if (typeof s.haptics === 'boolean') d.settings.haptics = s.haptics;
   if (THEME_MODES.includes(s.theme)) d.settings.theme = s.theme;
+  if (typeof s.volume === 'number' && s.volume >= 0 && s.volume <= 1) d.settings.volume = s.volume;
   if (raw.puzzles && typeof raw.puzzles === 'object') {
     for (const id of Object.keys(raw.puzzles)) d.puzzles[id] = normalizeProgress(raw.puzzles[id]);
   }
