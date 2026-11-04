@@ -123,12 +123,13 @@ export function playScreen(root, { store, go }, entry) {
       board,
       top: $('.top'),
       bottom: $('.bottom'),
-      sound: { place: sound.place, mistake: sound.mistake },
+      sound: { place: sound.place, mistake: sound.mistake, step: sound.step, button: sound.button },
       tapCell: bindCellTap,
       setProgress: t => { if (my === token) $('.progress').textContent = t; },
       say: t => { if (my === token) msg.textContent = t; },
       changed: () => { if (my === token) refresh(); },
       cleared: () => { if (my === token) onCleared(my); },
+      isCurrent: () => my === token,
     };
     const made = await entry.game.start(ctx);
     if (my !== token) { if (made && made.destroy) made.destroy(); return; }

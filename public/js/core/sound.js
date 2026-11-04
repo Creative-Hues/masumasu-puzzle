@@ -71,6 +71,8 @@ function play(fn) {
 export const sound = {
   // 置く・引く(コトッ)
   place() { play(t => knock(t, 520, 0.5, 0.09)); },
+  // なぞって1マス進む・戻る(コトッより短くて小さいコッ)
+  step() { play(t => knock(t, 640, 0.16, 0.035)); },
   // ボタン(軽いカタッ)
   button() { play(t => knock(t, 900, 0.18, 0.045)); },
   // クリア(木琴のように3つ上がる)
