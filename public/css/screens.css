@@ -96,3 +96,28 @@
 .board.trial .cell.glow { animation: glow .6s ease; }
 @keyframes blink { 50% { box-shadow: inset 0 0 0 3px transparent; } }
 @keyframes glow { 0% { filter: none; } 35% { filter: brightness(1.25) saturate(1.2); } 100% { filter: none; } }
+
+/* まじきり */
+.mj-label { text-align: center; font-size: 12px; color: var(--mute); margin-bottom: 6px; }
+.mj-target { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+.mj-chip { display: flex; align-items: center; gap: 3px; background: var(--chip); border-radius: 999px; padding: 6px 10px; min-height: 12px; }
+.mj-chip i { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); }
+.board.majikiri { position: relative; aspect-ratio: 1; background: var(--tile); border-radius: 12px; overflow: hidden; touch-action: none; }
+.mj-grid { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(var(--n), 1fr); grid-template-rows: repeat(var(--n), 1fr); }
+.mj-grid > div { position: relative; box-shadow: inset 0 0 0 .5px var(--gap); display: flex; align-items: center; justify-content: center; }
+.mj-dot { width: 36%; aspect-ratio: 1; border-radius: 50%; background: var(--dot); transition: background .2s, transform .2s; }
+.mj-dot.bad { background: var(--danger); transform: scale(1.12); }
+.mj-dot.win { background: var(--accent); animation: mj-glow .7s ease-out; }
+@keyframes mj-glow {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); box-shadow: 0 0 0 6px color-mix(in srgb, var(--accent) 30%, transparent); }
+  100% { transform: scale(1); }
+}
+.mj-lines { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
+.mj-line { position: absolute; border-radius: 3px; }
+.mj-line.h { height: 5px; left: 0; right: 0; transform: translateY(-50%); }
+.mj-line.v { width: 5px; top: 0; bottom: 0; transform: translateX(-50%); }
+.mj-line.hint { animation: mj-blink 1s ease-in-out infinite; }
+.mj-line.hint.h { background: repeating-linear-gradient(to right, var(--accent) 0 10px, transparent 10px 16px); }
+.mj-line.hint.v { background: repeating-linear-gradient(to bottom, var(--accent) 0 10px, transparent 10px 16px); }
+@keyframes mj-blink { 50% { opacity: .2; } }

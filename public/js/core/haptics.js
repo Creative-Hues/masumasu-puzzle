@@ -24,8 +24,8 @@ function useSwitch() {
 
 // マスにタップの判定と触感をつける。各パズルは、遊ぶ画面の枠から ctx.tapCell として使う
 //   onTap(e)  タップしたときに呼ぶ
-//   buzz()    このタップが正しく置ける・引ける手なら true(間違いの手は false で、震えない)
-//   moveLimit タップと見なす動きの上限(px)
+//   buzz(e)   このタップが正しく置ける・引ける手なら true(間違いの手は false で、震えない)。e で指の位置がわかる
+//   moveLimit タップと見なす動きの上限(px)。数か、その場で計算する関数
 // タップの判定は click ではなく指の動き(pointer)で行う。透明なスイッチがあるとclickが当てにならないため
 // 指の動きの知らせは、そのまま盤面まで伝わるので、はらう・なぞる・ドラッグの仕組みはじゃまされない
 export function bindCellTap(el, { onTap, buzz = () => true, moveLimit = TAP_MOVE_LIMIT }) {
@@ -51,16 +51,17 @@ export function bindCellTap(el, { onTap, buzz = () => true, moveLimit = TAP_MOVE
   }
 
   // 盤面が指をつかまえて(pointer capture)いても届くよう、動きと離したことは window で受ける
+  const limit = () => (typeof moveLimit === 'function' ? moveLimit() : moveLimit);
   function onMove(e) {
-    if (start && e.pointerId === start.id && !isTap(e.clientX - start.x, e.clientY - start.y, moveLimit)) moved = true;
+    if (start && e.pointerId === start.id && !isTap(e.clientX - start.x, e.clientY - start.y, limit())) moved = true;
   }
   function onUp(e) {
     if (!start || e.pointerId !== start.id) return;
-    const tap = !moved && isTap(e.clientX - start.x, e.clientY - start.y, moveLimit);
+    const tap = !moved && isTap(e.clientX - start.x, e.clientY - start.y, limit());
     stop();
     if (!tap) return;
     // 置く前の状態で、震わせるかを決める
-    const ok = enabled && !!buzz();
+    const ok = enabled && !!buzz(e);
     allowSwitch = ok;
     if (ok && !sw && canVibrate()) navigator.vibrate(12);
     onTap(e);

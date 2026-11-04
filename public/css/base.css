@@ -2,6 +2,7 @@
 :root {
   --bg: #f4f5f4; --tile: #ffffff; --ink: #2c3331; --mute: #858d8a; --gap: #e1e4e2;
   --wall: #d3d8d6; --stripe: #b9c0bd; --accent: #3d7f72; --accent-ink: #ffffff; --band: #ffffff;
+  --dot: #8f9794; --danger: #c0605a; --chip: #e9ecea;
   --font: "Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
   color-scheme: light;
 }
@@ -9,12 +10,14 @@
   :root:not([data-theme="light"]) {
     --bg: #1a1d1c; --tile: #2a2f2d; --ink: #e8ecea; --mute: #959e9a; --gap: #222725;
     --wall: #333937; --stripe: #454d4a; --accent: #7cc7b6; --accent-ink: #12201c; --band: #262b29;
+    --dot: #a3aba8; --danger: #e08a84; --chip: #333936;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #1a1d1c; --tile: #2a2f2d; --ink: #e8ecea; --mute: #959e9a; --gap: #222725;
   --wall: #333937; --stripe: #454d4a; --accent: #7cc7b6; --accent-ink: #12201c; --band: #262b29;
+  --dot: #a3aba8; --danger: #e08a84; --chip: #333936;
   color-scheme: dark;
 }
 

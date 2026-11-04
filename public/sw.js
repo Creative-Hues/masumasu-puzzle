@@ -21,6 +21,8 @@ const FILES = [
   'js/core/stages.js',
   'js/core/storage.js',
   'js/core/theme.js',
+  'js/puzzles/majikiri/logic.js',
+  'js/puzzles/majikiri/majikiri.js',
   'js/puzzles/registry.js',
   'js/puzzles/trial/trial.js',
   'js/ui/home.js',
