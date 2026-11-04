@@ -86,7 +86,7 @@
 /* 確かめ用の仮パズル */
 .board.trial { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 5px; }
 .board.trial .cell {
-  aspect-ratio: 1; border-radius: 8px; background: var(--tile); cursor: pointer;
+  position: relative; aspect-ratio: 1; border-radius: 8px; background: var(--tile); cursor: pointer;
   display: flex; align-items: center; justify-content: center; touch-action: manipulation;
 }
 .board.trial .cell.mark::after { content: ""; width: 26%; height: 26%; border-radius: 50%; background: var(--stripe); }

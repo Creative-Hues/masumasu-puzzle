@@ -7,7 +7,7 @@ import { tierOf } from '../core/stages.js';
 import { colorsFor } from '../core/palettes.js';
 import { createHintCounter } from '../core/hints.js';
 import { sound } from '../core/sound.js';
-import { haptic } from '../core/haptics.js';
+import { bindCellTap } from '../core/haptics.js';
 
 export function playScreen(root, { store, go }, entry) {
   root.innerHTML = `
@@ -96,7 +96,7 @@ export function playScreen(root, { store, go }, entry) {
       board,
       top: $('.top'),
       sound: { place: sound.place, mistake: sound.mistake },
-      haptic,
+      tapCell: bindCellTap,
       setProgress: t => { if (my === token) $('.progress').textContent = t; },
       say: t => { if (my === token) msg.textContent = t; },
       changed: () => { if (my === token) refresh(); },

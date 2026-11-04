@@ -1,25 +1,91 @@
-// 触感。Androidは navigator.vibrate、iPhoneは見えないスイッチ部品を押して触感を借りる(iOS 18以降)
-// 参考：https://azukiazusa.dev/blog/ios-safari-web-haptics 将来使えなくなる可能性がある
+// 触感。震えるのは、盤面のマスをタップした瞬間だけ(はらう・なぞる・ドラッグ・間違いでは震えない)
+// iPhone：マスの上に透明なスイッチ部品を重ね、指で本当にそのスイッチを押してもらう
+//   (iOS 26.5から、プログラムから押したことにする方法では震えなくなった。将来また使えなくなる可能性がある)
+// Android：navigator.vibrate
 
 let enabled = true;
-let label = null;
 
 export function setHapticsEnabled(v) { enabled = v; }
 
-function ensureSwitch() {
-  if (label) return;
-  label = document.createElement('label');
-  label.setAttribute('aria-hidden', 'true');
-  label.innerHTML = '<input type="checkbox" switch tabindex="-1">';
-  Object.assign(label.style, { position: 'fixed', left: '-9999px', top: '0', opacity: '0', pointerEvents: 'none' });
-  document.body.appendChild(label);
+// 指が触れてから離すまでに動いた距離がこれ以下なら「タップ」
+export const TAP_MOVE_LIMIT = 10;
+
+export function isTap(dx, dy, limit = TAP_MOVE_LIMIT) {
+  return Math.hypot(dx, dy) <= limit;
 }
 
-export function haptic() {
-  if (!enabled) return;
-  try {
-    if (navigator.vibrate) { navigator.vibrate(12); return; }
-    ensureSwitch();
-    label.click();
-  } catch (e) {}
+function canVibrate() {
+  return typeof navigator.vibrate === 'function';
+}
+
+function useSwitch() {
+  return !canVibrate() && typeof HTMLInputElement !== 'undefined' && 'switch' in HTMLInputElement.prototype;
+}
+
+// マスにタップの判定と触感をつける。各パズルは、遊ぶ画面の枠から ctx.tapCell として使う
+//   onTap(e)  タップしたときに呼ぶ
+//   buzz()    このタップが正しく置ける・引ける手なら true(間違いの手は false で、震えない)
+//   moveLimit タップと見なす動きの上限(px)
+// タップの判定は click ではなく指の動き(pointer)で行う。透明なスイッチがあるとclickが当てにならないため
+// 指の動きの知らせは、そのまま盤面まで伝わるので、はらう・なぞる・ドラッグの仕組みはじゃまされない
+export function bindCellTap(el, { onTap, buzz = () => true, moveLimit = TAP_MOVE_LIMIT }) {
+  let start = null;
+  let moved = false;
+  let allowSwitch = false; // 次のスイッチの切り替えを許すか(許すと震える)
+
+  let sw = null;
+  if (useSwitch()) {
+    if (getComputedStyle(el).position === 'static') el.style.position = 'relative';
+    sw = document.createElement('input');
+    sw.type = 'checkbox';
+    sw.setAttribute('switch', '');
+    sw.className = 'tap-switch';
+    sw.tabIndex = -1;
+    sw.setAttribute('aria-hidden', 'true');
+    // 震わせないときは、切り替わる直前で止める
+    sw.addEventListener('click', e => {
+      if (!allowSwitch) e.preventDefault();
+      allowSwitch = false;
+    });
+    el.appendChild(sw);
+  }
+
+  // 盤面が指をつかまえて(pointer capture)いても届くよう、動きと離したことは window で受ける
+  function onMove(e) {
+    if (start && e.pointerId === start.id && !isTap(e.clientX - start.x, e.clientY - start.y, moveLimit)) moved = true;
+  }
+  function onUp(e) {
+    if (!start || e.pointerId !== start.id) return;
+    const tap = !moved && isTap(e.clientX - start.x, e.clientY - start.y, moveLimit);
+    stop();
+    if (!tap) return;
+    // 置く前の状態で、震わせるかを決める
+    const ok = enabled && !!buzz();
+    allowSwitch = ok;
+    if (ok && !sw && canVibrate()) navigator.vibrate(12);
+    onTap(e);
+  }
+  function stop() {
+    start = null;
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', stop);
+  }
+  function onDown(e) {
+    if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    stop();
+    start = { x: e.clientX, y: e.clientY, id: e.pointerId };
+    moved = false;
+    allowSwitch = false;
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', stop);
+  }
+
+  el.addEventListener('pointerdown', onDown);
+  return () => {
+    stop();
+    el.removeEventListener('pointerdown', onDown);
+    if (sw) sw.remove();
+  };
 }

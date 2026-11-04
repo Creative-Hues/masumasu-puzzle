@@ -1,7 +1,7 @@
 // 設定画面：効果音・触感・画面の明るさ。変えるとその場で効き、保存する
 
 import { setSoundEnabled } from '../core/sound.js';
-import { setHapticsEnabled, haptic } from '../core/haptics.js';
+import { setHapticsEnabled } from '../core/haptics.js';
 import { applyTheme } from '../core/theme.js';
 
 const THEME_LABELS = [['auto', 'スマホに合わせる'], ['light', '明るい'], ['dark', '暗い']];
@@ -45,7 +45,7 @@ export function settingsScreen(root, { store, go }) {
       const on = !store.settings[key];
       store.setSetting(key, on);
       if (key === 'sound') setSoundEnabled(on);
-      if (key === 'haptics') { setHapticsEnabled(on); if (on) haptic(); }
+      if (key === 'haptics') setHapticsEnabled(on);
       refresh();
     };
   });

@@ -38,7 +38,8 @@ export function start(ctx) {
   for (let i = 0; i < total; i++) {
     const c = document.createElement('div');
     c.className = 'cell' + (marks.has(i) ? ' mark' : '');
-    c.addEventListener('click', () => tap(i));
+    // 印があって、まだ押していないマスだけ震える(間違いは震えない)
+    ctx.tapCell(c, { onTap: () => tap(i), buzz: () => !locked && marks.has(i) && !moves.includes(i) });
     board.appendChild(c);
     cells.push(c);
   }
@@ -75,7 +76,6 @@ export function start(ctx) {
       ctx.sound.mistake();
       ctx.say('印のないマスだった。1手戻してみよう');
     }
-    ctx.haptic();
     render();
     ctx.changed();
     finishIfSolved();
