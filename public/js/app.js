@@ -53,7 +53,7 @@ show();
 // ボタンを押したときの音
 document.addEventListener('click', e => {
   const b = e.target.closest('button');
-  if (b && !b.disabled && !b.hasAttribute('data-silent')) sound.button();
+  if (b && !b.disabled) sound.button();
 });
 
 // 2本指で広げる拡大をしない(iPhoneは viewport の指定を無視することがあるため。2回タップの拡大は css の touch-action で止める)

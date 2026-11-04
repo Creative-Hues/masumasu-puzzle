@@ -114,31 +114,16 @@ function hollowKnock(t, v) {
   n.start(t); n.stop(t + 0.03);
 }
 
-// 聞き比べで決めた音(どれも案3)
+// 聞き比べで決めた音(なぞるは案2、ボタン・間違い・クリアは案3)
 const STEP = { freq: 330, vol: 0.075, decay: 0.06, cutoff: 950 };                                  // なぞる
 const BUTTON = { freq: 500, vol: 0.085, decay: 0.055, cutoff: 1100, attack: 0.006 };                 // ボタン
 const MISTAKE = { freq: 145, vol: 0.24, decay: 0.14, cutoff: 700, attack: 0.007 };                   // 間違い
 const CLEAR = { freq: 392, vol: 0.17, decay: 0.55, cutoff: 1400, attack: 0.012, type: 'sine' };      // クリア
 
-// ---------- 置く音の聞き比べ用(一時的)。iPhoneで選んだら、選んだ案だけを残す ----------
-// 1がいちばん短く、はっきり。3がいちばん柔らかく、響きが長い
-export const PLACE_VARIANTS = [
-  { freq: 620, vol: 0.18, decay: 0.12, q: 14, attack: 0.002, cutoff: 2600 },
-  { freq: 520, vol: 0.155, decay: 0.18, q: 20, attack: 0.004, cutoff: 1900 },
-  { freq: 430, vol: 0.13, decay: 0.26, q: 26, attack: 0.006, cutoff: 1400 },
-];
-const TRIAL_KEY = 'masumasu-place-trial'; // 聞き比べのあいだだけ使う
-let placeVariant = 2;
-try {
-  localStorage.removeItem('masumasu-sound-trial'); // 前の聞き比べは終わった
-  const v = +localStorage.getItem(TRIAL_KEY);
-  if (v >= 1 && v <= PLACE_VARIANTS.length) placeVariant = v;
-} catch (e) {}
-export const getPlaceVariant = () => placeVariant;
-export function setPlaceVariant(v) {
-  placeVariant = v;
-  try { localStorage.setItem(TRIAL_KEY, String(v)); } catch (e) {}
-}
+// 置く・引く・つながる音(聞き比べで案1に決めた)
+const PLACE = { freq: 620, vol: 0.18, decay: 0.12, q: 14, attack: 0.002, cutoff: 2600 };
+// 聞き比べのときに端末にしまった選び方は、もう使わないので消す
+try { localStorage.removeItem('masumasu-place-trial'); localStorage.removeItem('masumasu-sound-trial'); } catch (e) {}
 
 function play(fn) {
   if (!enabled) return;
@@ -149,7 +134,7 @@ function play(fn) {
 
 export const sound = {
   // 置く・引く・つながる(中が空っぽの木の「コンッ」)
-  place() { play(t => hollowKnock(t, PLACE_VARIANTS[placeVariant - 1])); },
+  place() { play(t => hollowKnock(t, PLACE)); },
   // なぞって1マス進む・戻る(短くて小さく、こもった柔らかいコッ)
   step() { play(t => softKnock(t, STEP)); },
   // ボタン(軽いカタッ)

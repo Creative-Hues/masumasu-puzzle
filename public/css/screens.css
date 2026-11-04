@@ -201,7 +201,6 @@ html.fixed-screen #app { height: 100%; }
 .yt-hint { pointer-events: none; animation: us-blink 1s ease-in-out infinite; }
 .yt-main.glow { animation: us-glow .75s ease; }
 .yt-wait { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--mute); }
-.segment.even { grid-template-columns: repeat(3, 1fr); }
 /* 音量のつまみ */
 .settings .row.volume input { flex: 1; max-width: 220px; accent-color: var(--accent); touch-action: pan-x; }
 .settings .row.volume input:disabled { opacity: .35; }
