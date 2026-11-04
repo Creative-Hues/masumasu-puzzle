@@ -1,6 +1,7 @@
 // 遊ぶ画面の枠。4つのパズルで同じ
 // 上：もどる・◀ステージ▶・一覧、盤面の中身・進み具合・ヒントの残り
-// 下：1手戻す・最初から・ヒント、その下にルールの説明。クリアすると下から帯
+// 下：1手戻す・最初から・ヒント、その下に小さく「ルール」(押すと真ん中に説明。パズルごとに初めて開いたときだけ自動で出す)
+// 1画面に収め、スクロールしない。盤面は残りの場所いっぱいの正方形。クリアすると下から帯
 
 import { stageRng } from '../core/rng.js';
 import { tierOf } from '../core/stages.js';
@@ -41,7 +42,14 @@ export function playScreen(root, { store, go }, entry) {
         <button data-act="reset">最初から</button>
         <button data-act="hint" class="hint-btn"></button>
       </div>
-      <ul class="rules">${entry.game.rules.map(r => `<li>${r}</li>`).join('')}</ul>
+      <button class="text rules-btn" data-act="rules">ルール</button>
+    </div>
+    <div class="modal" hidden>
+      <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="rules-title">
+        <h2 id="rules-title">ルール</h2>
+        <ul class="rules">${entry.game.rules.map(r => `<li>${r}</li>`).join('')}</ul>
+        <button class="primary" data-act="rules-close">閉じる</button>
+      </div>
     </div>
     <div class="band" aria-live="polite">
       <div class="band-in">
@@ -52,7 +60,7 @@ export function playScreen(root, { store, go }, entry) {
 
   const $ = sel => root.querySelector(sel);
   const btn = act => $(`[data-act="${act}"]`);
-  const band = $('.band'), confirmBox = $('.confirm'), msg = $('.msg');
+  const band = $('.band'), confirmBox = $('.confirm'), msg = $('.msg'), modal = $('.modal');
 
   let stage = 1, inst = null, hints = createHintCounter(), busy = false, token = 0;
 
@@ -136,6 +144,12 @@ export function playScreen(root, { store, go }, entry) {
   btn('skip-yes').onclick = () => { store.markSkipped(entry.id, stage); load(stage + 1); };
   btn('skip-no').onclick = () => { confirmBox.hidden = true; };
 
+  // ルールの説明
+  btn('rules').onclick = () => { modal.hidden = false; };
+  btn('rules-close').onclick = () => { modal.hidden = true; };
+
   load(store.progress(entry.id).current);
+  // パズルごとに、初めて開いたときだけ自動で出す
+  if (!store.hasSeenRules(entry.id)) { modal.hidden = false; store.markRulesSeen(entry.id); }
   return () => { token++; if (inst && inst.destroy) inst.destroy(); };
 }

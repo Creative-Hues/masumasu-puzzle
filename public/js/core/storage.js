@@ -1,8 +1,9 @@
 // 端末への保存。設定と、パズルごとの進み具合を1つの入れ物にまとめる
-// 形：{ v, settings: { sound, haptics, theme }, puzzles: { [id]: { maxCleared, current, skipped } } }
+// 形：{ v, settings: { sound, haptics, theme }, puzzles: { [id]: { maxCleared, current, skipped } }, rulesSeen }
 //   maxCleared … どこまでクリアしたか(飛ばしたものも含む。1本道なので、それより前は全部済み)
 //   current    … 今のステージ
 //   skipped    … 飛ばしたステージの番号
+// rulesSeen … ルールの説明を自動で出したパズル(初めて開いたときだけ出すため)
 
 export const STORE_KEY = 'masumasu';
 export const STORE_VERSION = 1;
@@ -11,7 +12,7 @@ export const THEME_MODES = ['auto', 'light', 'dark'];
 const DEFAULT_SETTINGS = { sound: true, haptics: true, theme: 'auto' };
 
 function blank() {
-  return { v: STORE_VERSION, settings: { ...DEFAULT_SETTINGS }, puzzles: {} };
+  return { v: STORE_VERSION, settings: { ...DEFAULT_SETTINGS }, puzzles: {}, rulesSeen: [] };
 }
 
 function count(x, min, fallback) {
@@ -39,6 +40,7 @@ export function normalize(raw) {
   if (raw.puzzles && typeof raw.puzzles === 'object') {
     for (const id of Object.keys(raw.puzzles)) d.puzzles[id] = normalizeProgress(raw.puzzles[id]);
   }
+  if (Array.isArray(raw.rulesSeen)) d.rulesSeen = [...new Set(raw.rulesSeen.filter(x => typeof x === 'string'))];
   return d;
 }
 
@@ -58,6 +60,9 @@ export function createStore(backend) {
       p.current = Math.max(1, Math.min(stage, p.maxCleared + 1));
       save();
     },
+    hasSeenRules(id) { return data.rulesSeen.includes(id); },
+    markRulesSeen(id) { if (!data.rulesSeen.includes(id)) { data.rulesSeen.push(id); save(); } },
+
     // 解いてクリア。前に飛ばしたステージなら、ふつうのクリアに変える
     markCleared(id, stage) {
       const p = prog(id);

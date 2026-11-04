@@ -101,3 +101,22 @@ test('保存：今のステージは、次に遊べるステージより先に�
   s.setCurrent('nobishiro', 9);
   assert.equal(s.progress('nobishiro').current, 1);
 });
+
+test('保存：ルールを出したパズルを覚え、読み直しても残る', () => {
+  const mem = memory();
+  const s = createStore(mem);
+  assert.equal(s.hasSeenRules('majikiri'), false);
+  s.markRulesSeen('majikiri');
+  s.markRulesSeen('majikiri');
+  const again = createStore(memory(mem.raw()));
+  assert.equal(again.hasSeenRules('majikiri'), true);
+  assert.equal(again.hasSeenRules('nobishiro'), false);
+  assert.deepEqual(JSON.parse(mem.raw()).rulesSeen, ['majikiri']);
+});
+
+test('保存：ルールの項目がない古いデータでも動く', () => {
+  const s = createStore(memory(JSON.stringify({ v: 1, settings: {}, puzzles: {} })));
+  assert.equal(s.hasSeenRules('majikiri'), false);
+  const bad = createStore(memory(JSON.stringify({ rulesSeen: 'majikiri' })));
+  assert.equal(bad.hasSeenRules('majikiri'), false);
+});

@@ -34,6 +34,8 @@ function show() {
   const [, kind, id] = (location.hash || '#/').split('/');
   const app = { store, go };
   const entry = findPuzzle(id);
+  // 遊ぶ画面は1画面に収め、スクロールしない(css/screens.css の .fixed-screen)
+  document.documentElement.classList.toggle('fixed-screen', kind === 'play' && !!entry);
   if (kind === 'settings') cleanup = settingsScreen(root, app);
   else if (kind === 'play' && entry) cleanup = playScreen(root, app, entry);
   else if (kind === 'list' && entry) cleanup = stageListScreen(root, app, entry);
@@ -52,6 +54,10 @@ document.addEventListener('click', e => {
   const b = e.target.closest('button');
   if (b && !b.disabled) sound.button();
 });
+
+// 2本指で広げる拡大をしない(iPhoneは viewport の指定を無視することがあるため。2回タップの拡大は css の touch-action で止める)
+['gesturestart', 'gesturechange', 'gestureend'].forEach(t => document.addEventListener(t, e => e.preventDefault(), { passive: false }));
+document.addEventListener('touchmove', e => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 
 // 保存したものを端末が勝手に消さないようにお願いする
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});

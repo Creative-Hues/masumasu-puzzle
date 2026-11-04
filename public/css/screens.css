@@ -29,10 +29,41 @@
 .top:empty { display: none; }
 .msg { text-align: center; font-size: 14px; color: var(--mute); min-height: 1.5em; margin-top: -8px; }
 .board-wrap { position: relative; }
+.rules-btn { align-self: center; font-size: 13px; padding: 4px 14px; }
 .ctrl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .ctrl button { padding-inline: 4px; }
 .hint-btn { font-size: 14px; line-height: 1.3; }
 .rules { margin: 0; padding-left: 1.2em; font-size: 13px; line-height: 1.75; color: var(--mute); }
+
+/* 遊ぶ画面は1画面に収め、スクロールしない(js/app.js が html に .fixed-screen をつける) */
+html.fixed-screen, html.fixed-screen body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+html.fixed-screen body { position: fixed; inset: 0; }
+html.fixed-screen #app { height: 100%; }
+.app.play {
+  height: 100%; gap: 10px; touch-action: none;
+  padding-block: 8px max(8px, env(safe-area-inset-bottom, 0px));
+}
+.app.play > * { flex: none; }
+/* 盤面は、残りの場所いっぱいの正方形(幅と高さの小さいほう) */
+.app.play .board-wrap {
+  flex: 1 1 0; min-height: 120px; container-type: size;
+  display: flex; align-items: center; justify-content: center;
+}
+.app.play .board-wrap > .board { width: min(100cqw, 100cqh); }
+
+/* ルールの説明(画面の真ん中) */
+.modal {
+  position: fixed; inset: 0; z-index: 20; background: rgba(0, 0, 0, .35);
+  display: flex; align-items: center; justify-content: center;
+  padding: max(24px, env(safe-area-inset-top, 0px)) max(16px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+}
+.modal-box {
+  width: 100%; max-width: 400px; max-height: 100%; overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y;
+  background: var(--band); border-radius: 18px; padding: 22px 20px 20px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.modal-box h2 { margin: 0; font-size: 18px; }
+.modal-box .rules { font-size: 15px; line-height: 1.8; color: var(--ink); }
 
 /* 飛ばす前の確認(盤面の上に重ねる) */
 .confirm {
