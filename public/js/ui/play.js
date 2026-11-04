@@ -64,7 +64,24 @@ export function playScreen(root, { store, go }, entry) {
 
   let stage = 1, inst = null, hints = createHintCounter(), busy = false, token = 0;
 
+  // 確認・ルール・クリアの帯が出ているあいだ(と、クリアの光り方のあいだ)は、盤面が指を受け付けない
+  // inert をつけると、盤面の中の透明なスイッチ(触感用)も押されず、震えない
+  // 閉じたあとも少しのあいだ受け付けず、「閉じる」などを押した指がそのまま盤面に届かないようにする
+  const UNBLOCK_DELAY = 350;
+  let unblockTimer = 0;
+  function setBoardBlocked(blocked) {
+    const board = $('.board');
+    if (blocked) {
+      clearTimeout(unblockTimer);
+      unblockTimer = 0;
+      board.inert = true;
+    } else if (board.inert && !unblockTimer) {
+      unblockTimer = setTimeout(() => { unblockTimer = 0; board.inert = false; }, UNBLOCK_DELAY);
+    }
+  }
+
   function refresh() {
+    setBoardBlocked(busy || !confirmBox.hidden || !modal.hidden || band.classList.contains('show'));
     const p = store.progress(entry.id);
     $('.stage-no').textContent = `ステージ ${stage}`;
     btn('prev').disabled = stage <= 1;
@@ -124,6 +141,7 @@ export function playScreen(root, { store, go }, entry) {
     await inst.glow();
     if (my !== token) return;
     band.classList.add('show');
+    refresh();
   }
 
   btn('home').onclick = () => go('#/');
@@ -135,21 +153,21 @@ export function playScreen(root, { store, go }, entry) {
   btn('reset').onclick = () => { if (busy || !inst) return; confirmBox.hidden = true; inst.reset(); refresh(); };
   btn('hint').onclick = () => {
     if (busy || !inst) return;
-    if (hints.exhausted) { confirmBox.hidden = false; return; }
+    if (hints.exhausted) { confirmBox.hidden = false; refresh(); return; }
     hints.use();
     inst.hint();
     refresh();
   };
   // 飛ばすとクリア扱い。光り方も帯も出さず、すぐ次のステージへ
   btn('skip-yes').onclick = () => { store.markSkipped(entry.id, stage); load(stage + 1); };
-  btn('skip-no').onclick = () => { confirmBox.hidden = true; };
+  btn('skip-no').onclick = () => { confirmBox.hidden = true; refresh(); };
 
   // ルールの説明
-  btn('rules').onclick = () => { modal.hidden = false; };
-  btn('rules-close').onclick = () => { modal.hidden = true; };
+  btn('rules').onclick = () => { modal.hidden = false; refresh(); };
+  btn('rules-close').onclick = () => { modal.hidden = true; refresh(); };
 
   load(store.progress(entry.id).current);
   // パズルごとに、初めて開いたときだけ自動で出す
-  if (!store.hasSeenRules(entry.id)) { modal.hidden = false; store.markRulesSeen(entry.id); }
-  return () => { token++; if (inst && inst.destroy) inst.destroy(); };
+  if (!store.hasSeenRules(entry.id)) { modal.hidden = false; store.markRulesSeen(entry.id); refresh(); }
+  return () => { token++; clearTimeout(unblockTimer); if (inst && inst.destroy) inst.destroy(); };
 }

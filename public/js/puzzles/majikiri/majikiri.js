@@ -83,6 +83,7 @@ export function start(ctx) {
     if (!swipe || e.pointerId !== swipe.id) return;
     const s = swipe;
     endSwipe();
+    if (board.closest('[inert]')) return; // 確認などが出ているあいだは受け付けない
     const dx = e.clientX - s.x, dy = e.clientY - s.y;
     if (Math.hypot(dx, dy) <= swipeLimit()) return; // タップは tapCell が受け持つ
     const { fx, fy } = where(s.x, s.y);
@@ -97,7 +98,7 @@ export function start(ctx) {
   }
   // 盤面が指をつかまえる仕組み(pointer capture)は使わない。iPhoneでスイッチが押されなくなるため
   board.addEventListener('pointerdown', e => {
-    if (!e.isPrimary || locked) return;
+    if (!e.isPrimary || locked || board.closest('[inert]')) return;
     endSwipe();
     swipe = { x: e.clientX, y: e.clientY, id: e.pointerId };
     window.addEventListener('pointerup', onSwipeUp);

@@ -57,6 +57,8 @@ export function bindCellTap(el, { onTap, buzz = () => true, moveLimit = TAP_MOVE
   }
   function onUp(e) {
     if (!start || e.pointerId !== start.id) return;
+    // 指を離すまでに盤面が受け付けなくなった(確認などが出た)ときは、タップにしない
+    if (el.closest('[inert]')) { stop(); return; }
     const tap = !moved && isTap(e.clientX - start.x, e.clientY - start.y, limit());
     stop();
     if (!tap) return;
@@ -73,7 +75,7 @@ export function bindCellTap(el, { onTap, buzz = () => true, moveLimit = TAP_MOVE
     window.removeEventListener('pointercancel', stop);
   }
   function onDown(e) {
-    if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0)) return;
+    if (!e.isPrimary || (e.pointerType === 'mouse' && e.button !== 0) || el.closest('[inert]')) return;
     stop();
     start = { x: e.clientX, y: e.clientY, id: e.pointerId };
     moved = false;
