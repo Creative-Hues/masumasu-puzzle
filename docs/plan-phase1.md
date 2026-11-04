@@ -16,41 +16,43 @@
 | オフライン | Service Worker(ネットがなくても開けるよう、ファイルを端末にしまっておく仕組み)を手で書く | 中身が単純なので道具は要らない |
 | 問題作りの裏側 | Web Worker(画面を止めずに裏で計算する仕組み)。フェーズ1では入れ口だけ用意し、よつつじ(フェーズ5)で使う | 計画書どおり |
 | 自動の確かめ | Node.js(PCに入っている。v24)に付いている `node --test` で、乱数・段階・保存などの計算を確かめる | 追加の道具なしで動く |
-| PCでの確認用サーバー | `npx serve`(その場でファイルを配る小さな道具) | PCに入れっぱなしにしなくてよい |
+| PCでの確認用サーバー | `npx serve public`(その場でファイルを配る小さな道具。公開するフォルダだけを配る) | PCに入れっぱなしにしなくてよい |
 
 ## 2. ファイル構成の提案
 
 ```
 masumasu-puzzle/
-├─ index.html              1ページだけ。画面は中身を入れ替えて切り替える
-├─ manifest.webmanifest    ホーム画面に追加するときの名前・アイコン・色
-├─ sw.js                   オフライン用(Service Worker)
-├─ _headers                Cloudflare Pagesに「sw.jsは毎回新しく読む」と伝える
-├─ icons/                  アイコンB(icon.svg と、各大きさのPNG)
-├─ css/
-│  ├─ base.css             色の決まり(明るい・暗い)、文字、ボタン
-│  └─ screens.css          各画面の並べ方、クリアの帯
-├─ js/
-│  ├─ app.js               起動と画面の切り替え(URLの # のあとで場所を覚える)
-│  ├─ core/                画面を持たない共通の計算
-│  │  ├─ rng.js            ステージ番号から乱数を作る(試作と同じ mulberry32)
-│  │  ├─ stages.js         何段階目か(1〜20が1段階目、21〜40が2段階目…)
-│  │  ├─ palettes.js       くすみ系5種類(計画書の表の色)、ステージごとの切り替え
-│  │  ├─ storage.js        端末への保存(進み具合・設定)
-│  │  ├─ sound.js          木の音をその場で作る
-│  │  └─ haptics.js        触感
-│  ├─ ui/                  共通の画面
-│  │  ├─ home.js           最初の画面
-│  │  ├─ play.js           遊ぶ画面の枠(上の情報・3つのボタン・ルール・ヒント回数・帯)
-│  │  ├─ stage-list.js     一覧(番号のマス目)
-│  │  └─ settings.js       設定画面
-│  └─ puzzles/
-│     ├─ registry.js       4つのパズルの登録表(名前・ひとこと説明・中身の場所)
-│     └─ trial/            確かめ用の仮パズル(下の5で説明)
-│        (フェーズ2以降に majikiri/ nobishiro/ utsushie/ yotsutsuji/ を足す)
-├─ tools/make-icons.mjs    アイコンのPNGを作る小さな道具(追加の部品なし)
-├─ tests/                  node --test で動かす確かめ
-└─ docs/                   計画書・試作(今のまま)
+├─ public/                    公開するのはこのフォルダの中だけ
+│  ├─ index.html              1ページだけ。画面は中身を入れ替えて切り替える
+│  ├─ manifest.webmanifest    ホーム画面に追加するときの名前・アイコン・色
+│  ├─ sw.js                   オフライン用(Service Worker)
+│  ├─ _headers                Cloudflare Pagesに「sw.jsは毎回新しく読む」と伝える
+│  ├─ icons/                  アイコンB(icon.svg と、各大きさのPNG)
+│  ├─ css/
+│  │  ├─ base.css             色の決まり(明るい・暗い)、文字、ボタン
+│  │  └─ screens.css          各画面の並べ方、クリアの帯
+│  └─ js/
+│     ├─ app.js               起動と画面の切り替え(URLの # のあとで場所を覚える)
+│     ├─ core/                画面を持たない共通の計算
+│     │  ├─ rng.js            ステージ番号から乱数を作る(試作と同じ mulberry32)
+│     │  ├─ stages.js         何段階目か(1〜20が1段階目、21〜40が2段階目…)
+│     │  ├─ palettes.js       くすみ系5種類(計画書の表の色)、ステージごとの切り替え
+│     │  ├─ storage.js        端末への保存(進み具合・設定)
+│     │  ├─ sound.js          木の音をその場で作る
+│     │  └─ haptics.js        触感
+│     ├─ ui/                  共通の画面
+│     │  ├─ home.js           最初の画面
+│     │  ├─ play.js           遊ぶ画面の枠(上の情報・3つのボタン・ルール・ヒント回数・帯)
+│     │  ├─ stage-list.js     一覧(番号のマス目)
+│     │  └─ settings.js       設定画面
+│     └─ puzzles/
+│        ├─ registry.js       4つのパズルの登録表(名前・ひとこと説明・中身の場所)
+│        └─ trial/            確かめ用の仮パズル(下の5で説明)
+│           (フェーズ2以降に majikiri/ nobishiro/ utsushie/ yotsutsuji/ を足す)
+├─ tools/make-icons.mjs       アイコンのPNGを作って public/icons/ に置く小さな道具(追加の部品なし)
+├─ tests/                     node --test で動かす確かめ(public/ の中のコードを確かめる)
+├─ package.json               確かめ・PCでの確認の命令をまとめたもの(公開しない)
+└─ docs/                      計画書・試作(公開しない)
 ```
 
 ### パズルを差し込む「約束事」
@@ -123,7 +125,7 @@ masumasu-puzzle/
 ### 公開の手順(創がする所と、Claude Codeがする所)
 1. 創：GitHubで Creative-Hues に masumasu-puzzle という空のリポジトリ(ファイル置き場)を作る。
 2. Claude Code：このフォルダをgitで管理し始め、最初の記録(コミット)を作り、GitHubへ送る(送るときに一度、ブラウザでGitHubへのログインを求められる)。
-3. 創：Cloudflareの管理画面で「Workers & Pages」→ 作成 → Pages → 「Gitにつなぐ」→ masumasu-puzzle を選ぶ。プロジェクト名は masumasu-puzzle、ビルドの命令は空、出すフォルダは `/`。
+3. 創：Cloudflareの管理画面で「Workers & Pages」→ 作成 → Pages → 「Gitにつなぐ」→ masumasu-puzzle を選ぶ。プロジェクト名は masumasu-puzzle、ビルドの命令は空、出すフォルダ(Build output directory)は `public`。これで docs/・tests/・tools/ は公開されない。
 4. これで masumasu-puzzle.pages.dev に出る。以後はGitHubへ送るたびに自動で公開される。
    - main以外の枝(ブランチ)に送ると、確かめ用の別のURLができるので、本番に出す前にiPhoneで見られる。
 
@@ -159,7 +161,7 @@ masumasu-puzzle/
 ## 6. 動作確認の手順
 
 ### PC(Chrome)
-1. フォルダで `npx serve` を動かし、表示されたアドレスを開く。
+1. masumasu-puzzle のフォルダで `npx serve public` を動かし、表示されたアドレスを開く。
 2. 開発者ツール(F12)のスマホ表示で、iPhoneの大きさにして見る。
 3. 4つのパズルを開き、◀▶・一覧・ヒント3回・飛ばす・クリアの帯・「次へ」を順に試す。
 4. 設定で明るい・暗いを切り替え、再読み込みしても残るか見る。

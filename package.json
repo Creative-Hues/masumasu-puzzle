@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "serve": "npx serve .",
+    "serve": "npx serve public",
     "icons": "node tools/make-icons.mjs"
   }
 }

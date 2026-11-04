@@ -74,10 +74,10 @@ function svg() {
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect width="120" height="120" rx="27" fill="#fff"/>${rects}</svg>\n`;
 }
 
-const out = new URL('../icons/', import.meta.url);
+const out = new URL('../public/icons/', import.meta.url);
 mkdirSync(out, { recursive: true });
 writeFileSync(new URL('apple-touch-icon.png', out), png(180));
 writeFileSync(new URL('icon-192.png', out), png(192));
 writeFileSync(new URL('icon-512.png', out), png(512));
 writeFileSync(new URL('icon.svg', out), svg());
-console.log('icons/ にアイコンを作りました');
+console.log('public/icons/ にアイコンを作りました');

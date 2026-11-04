@@ -1,11 +1,11 @@
 // 共通の計算の確かめ。node --test で動かす
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { stageRng } from '../js/core/rng.js';
-import { tierOf } from '../js/core/stages.js';
-import { THEMES, themeFor } from '../js/core/palettes.js';
-import { createHintCounter } from '../js/core/hints.js';
-import { createStore, STORE_KEY } from '../js/core/storage.js';
+import { stageRng } from '../public/js/core/rng.js';
+import { tierOf } from '../public/js/core/stages.js';
+import { THEMES, themeFor } from '../public/js/core/palettes.js';
+import { createHintCounter } from '../public/js/core/hints.js';
+import { createStore, STORE_KEY } from '../public/js/core/storage.js';
 
 const take = (rng, n) => Array.from({ length: n }, rng);
 
