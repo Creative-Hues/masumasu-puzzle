@@ -202,3 +202,4 @@ html.fixed-screen #app { height: 100%; }
 .yt-main.glow { animation: us-glow .75s ease; }
 .yt-wait { position: absolute; inset: 0; margin: 0; display: flex; align-items: center; justify-content: center; font-size: 14px; color: var(--mute); }
 .segment.even { grid-template-columns: repeat(3, 1fr); }
+.settings .row.column .segment + .segment { margin-top: 6px; }

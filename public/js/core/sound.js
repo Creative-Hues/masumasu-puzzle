@@ -26,73 +26,28 @@ function noise() {
   return noiseBuf;
 }
 
-// 木をたたいた音：すぐ消える低い響き＋木らしいずれた倍音＋当たった瞬間のこすれ
-function knock(t, freq, vol, decay, type = 'triangle') {
-  const out = ctx.createGain();
-  out.gain.setValueAtTime(0.0001, t);
-  out.gain.exponentialRampToValueAtTime(vol, t + 0.002);
-  out.gain.exponentialRampToValueAtTime(0.0001, t + decay);
-  out.connect(ctx.destination);
-
-  const o = ctx.createOscillator();
-  o.type = type;
-  o.frequency.setValueAtTime(freq * 1.4, t);
-  o.frequency.exponentialRampToValueAtTime(freq, t + 0.012);
-  o.connect(out);
-  o.start(t); o.stop(t + decay + 0.02);
-
-  const o2 = ctx.createOscillator();
-  const g2 = ctx.createGain();
-  o2.type = 'sine';
-  o2.frequency.value = freq * 2.76;
-  g2.gain.setValueAtTime(0.3, t);
-  g2.gain.exponentialRampToValueAtTime(0.001, t + decay * 0.4);
-  o2.connect(g2).connect(out);
-  o2.start(t); o2.stop(t + decay + 0.02);
-
-  const n = ctx.createBufferSource();
-  const bp = ctx.createBiquadFilter();
-  const gn = ctx.createGain();
-  n.buffer = noise();
-  bp.type = 'bandpass'; bp.frequency.value = freq * 3; bp.Q.value = 2;
-  gn.gain.setValueAtTime(vol * 0.6, t);
-  gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.025);
-  n.connect(bp).connect(gn).connect(ctx.destination);
-  n.start(t); n.stop(t + 0.04);
-}
-
-// なぞる音：こもった柔らかい木の音。高い響きを削り(lowpass)、立ち上がりをゆるやかにする
-// 聞き比べ用に3案(1が高め・大きめ、3がいちばん低く小さい)。iPhoneで選んだら、選んだ案だけを残す
-export const STEP_VARIANTS = [
-  { freq: 420, vol: 0.10, decay: 0.05, cutoff: 1300 },
-  { freq: 330, vol: 0.075, decay: 0.06, cutoff: 950 },
-  { freq: 260, vol: 0.055, decay: 0.07, cutoff: 700 },
-];
-const STEP_KEY = 'masumasu-step-trial'; // 聞き比べのあいだだけ使う
-let stepVariant = 2;
-try { const v = +localStorage.getItem(STEP_KEY); if (v >= 1 && v <= STEP_VARIANTS.length) stepVariant = v; } catch (e) {}
-export const getStepVariant = () => stepVariant;
-export function setStepVariant(v) {
-  stepVariant = v;
-  try { localStorage.setItem(STEP_KEY, String(v)); } catch (e) {}
-}
-
+// こもった柔らかい木の音
+//   freq：高さ、vol：音量、decay：鳴っている長さ(秒)、cutoff：これより高い響きを削る(こもり具合)
+//   attack：鳴り始めのゆるやかさ(秒。長いほど音の頭が丸い)、click：当たった瞬間の「カッ」の強さ(0でなし)
+//   type：音の形(木琴のような澄んだ音は 'sine')
 function softKnock(t, v) {
+  const attack = v.attack ?? 0.004, type = v.type ?? 'triangle', click = v.click ?? 0;
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass'; lp.frequency.value = v.cutoff; lp.Q.value = 0.7;
   const out = ctx.createGain();
   out.gain.setValueAtTime(0.0001, t);
-  out.gain.exponentialRampToValueAtTime(v.vol, t + 0.004);
+  out.gain.exponentialRampToValueAtTime(v.vol, t + attack);
   out.gain.exponentialRampToValueAtTime(0.0001, t + v.decay);
   lp.connect(out).connect(ctx.destination);
 
   const o = ctx.createOscillator();
-  o.type = 'triangle';
+  o.type = type;
   o.frequency.setValueAtTime(v.freq * 1.2, t);
   o.frequency.exponentialRampToValueAtTime(v.freq, t + 0.01);
   o.connect(lp);
   o.start(t); o.stop(t + v.decay + 0.02);
 
+  // 木らしい、少しずれた高い響き
   const o2 = ctx.createOscillator();
   const g2 = ctx.createGain();
   o2.type = 'sine';
@@ -101,7 +56,65 @@ function softKnock(t, v) {
   g2.gain.exponentialRampToValueAtTime(0.001, t + v.decay * 0.4);
   o2.connect(g2).connect(lp);
   o2.start(t); o2.stop(t + v.decay + 0.02);
+
+  // 当たった瞬間のこすれ(「カッ」)。これも高い響きを削ってから鳴らす
+  if (click > 0) {
+    const n = ctx.createBufferSource();
+    const bp = ctx.createBiquadFilter();
+    const gn = ctx.createGain();
+    n.buffer = noise();
+    bp.type = 'bandpass'; bp.frequency.value = v.freq * 3; bp.Q.value = 2;
+    gn.gain.setValueAtTime(v.vol * click, t);
+    gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.02);
+    n.connect(bp).connect(gn).connect(lp);
+    n.start(t); n.stop(t + 0.04);
+  }
 }
+
+// なぞる音(聞き比べで案2に決めた)
+const STEP = { freq: 330, vol: 0.075, decay: 0.06, cutoff: 950 };
+
+// ---------- 聞き比べ用(一時的)。iPhoneで選んだら、選んだ案だけを残す ----------
+// 1がいちばん今に近く、3がいちばん柔らかい(低く・こもって・小さく・頭が丸い)
+export const SOUND_VARIANTS = {
+  // 置く・引く(コトッ)。もとは 520Hz・音量0.5・0.09秒・こすれ強め
+  place: [
+    { freq: 470, vol: 0.36, decay: 0.09, cutoff: 2200, attack: 0.003, click: 0.25 },
+    { freq: 400, vol: 0.28, decay: 0.10, cutoff: 1500, attack: 0.005, click: 0.1 },
+    { freq: 340, vol: 0.22, decay: 0.11, cutoff: 1000, attack: 0.007, click: 0 },
+  ],
+  // ボタン(カタッ)。もとは 900Hz・音量0.18・0.045秒
+  button: [
+    { freq: 760, vol: 0.14, decay: 0.045, cutoff: 2400, attack: 0.003, click: 0.2 },
+    { freq: 620, vol: 0.11, decay: 0.05, cutoff: 1600, attack: 0.004, click: 0.08 },
+    { freq: 500, vol: 0.085, decay: 0.055, cutoff: 1100, attack: 0.006, click: 0 },
+  ],
+  // 間違い(低いコトコト。2回たたく)。もとは 190Hz・165Hz・音量0.5
+  mistake: [
+    { freq: 185, vol: 0.38, decay: 0.12, cutoff: 1400, attack: 0.003, click: 0.2 },
+    { freq: 165, vol: 0.30, decay: 0.13, cutoff: 1000, attack: 0.005, click: 0.08 },
+    { freq: 145, vol: 0.24, decay: 0.14, cutoff: 700, attack: 0.007, click: 0 },
+  ],
+  // クリア(木琴のように3つ上がる。ド・ミ・ソの間隔)。もとは ド(523Hz)から・音量0.35
+  clear: [
+    { freq: 523, vol: 0.28, decay: 0.45, cutoff: 3000, attack: 0.004, type: 'sine' },
+    { freq: 440, vol: 0.22, decay: 0.5, cutoff: 2000, attack: 0.008, type: 'sine' },
+    { freq: 392, vol: 0.17, decay: 0.55, cutoff: 1400, attack: 0.012, type: 'sine' },
+  ],
+};
+const TRIAL_KEY = 'masumasu-sound-trial'; // 聞き比べのあいだだけ使う
+const picked = { place: 2, button: 2, mistake: 2, clear: 2 };
+try {
+  localStorage.removeItem('masumasu-step-trial'); // なぞる音の聞き比べは終わった
+  const saved = JSON.parse(localStorage.getItem(TRIAL_KEY) || '{}');
+  for (const k of Object.keys(picked)) if ([1, 2, 3].includes(saved[k])) picked[k] = saved[k];
+} catch (e) {}
+export const getSoundVariant = kind => picked[kind];
+export function setSoundVariant(kind, v) {
+  picked[kind] = v;
+  try { localStorage.setItem(TRIAL_KEY, JSON.stringify(picked)); } catch (e) {}
+}
+const V = kind => SOUND_VARIANTS[kind][picked[kind] - 1];
 
 function play(fn) {
   if (!enabled) return;
@@ -112,13 +125,19 @@ function play(fn) {
 
 export const sound = {
   // 置く・引く(コトッ)
-  place() { play(t => knock(t, 520, 0.5, 0.09)); },
+  place() { play(t => softKnock(t, V('place'))); },
   // なぞって1マス進む・戻る(コトッより短くて小さく、こもった柔らかいコッ)
-  step() { play(t => softKnock(t, STEP_VARIANTS[stepVariant - 1])); },
+  step() { play(t => softKnock(t, STEP)); },
   // ボタン(軽いカタッ)
-  button() { play(t => knock(t, 900, 0.18, 0.045)); },
+  button() { play(t => softKnock(t, V('button'))); },
   // クリア(木琴のように3つ上がる)
-  clear() { play(t => [523, 659, 784].forEach((f, i) => knock(t + i * 0.12, f, 0.35, 0.45, 'sine'))); },
+  clear() {
+    const v = V('clear');
+    play(t => [1, 1.26, 1.5].forEach((r, i) => softKnock(t + i * 0.12, { ...v, freq: v.freq * r })));
+  },
   // 間違い(低く鈍いコトコト)
-  mistake() { play(t => { knock(t, 190, 0.5, 0.12); knock(t + 0.09, 165, 0.45, 0.14); }); },
+  mistake() {
+    const v = V('mistake');
+    play(t => { softKnock(t, v); softKnock(t + 0.09, { ...v, freq: v.freq * 0.87, vol: v.vol * 0.9, decay: v.decay * 1.15 }); });
+  },
 };

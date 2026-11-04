@@ -1,10 +1,12 @@
 // 設定画面：効果音・触感・画面の明るさ。変えるとその場で効き、保存する
 
-import { setSoundEnabled, sound, STEP_VARIANTS, getStepVariant, setStepVariant } from '../core/sound.js';
+import { setSoundEnabled, sound, SOUND_VARIANTS, getSoundVariant, setSoundVariant } from '../core/sound.js';
 import { setHapticsEnabled } from '../core/haptics.js';
 import { applyTheme } from '../core/theme.js';
 
 const THEME_LABELS = [['auto', 'スマホに合わせる'], ['light', '明るい'], ['dark', '暗い']];
+// 聞き比べ用(一時的)。選んだら消す
+const TRIAL_LABELS = [['place', '置く'], ['button', 'ボタン'], ['mistake', '間違い'], ['clear', 'クリア']];
 
 export function settingsScreen(root, { store, go }) {
   root.innerHTML = `
@@ -31,10 +33,11 @@ export function settingsScreen(root, { store, go }) {
         </div>
         <!-- 聞き比べ用(一時的)。選んだら消す -->
         <div class="row column">
-          <span>よつつじのなぞる音(聞き比べ用)</span>
-          <div class="segment even" role="radiogroup" aria-label="なぞる音">
-            ${STEP_VARIANTS.map((_, i) => `<button role="radio" data-silent data-step="${i + 1}">なぞる音${i + 1}</button>`).join('')}
-          </div>
+          <span>音の聞き比べ(一時的)</span>
+          ${TRIAL_LABELS.map(([kind, label]) => `
+          <div class="segment even" role="radiogroup" aria-label="${label}の音">
+            ${SOUND_VARIANTS[kind].map((_, i) => `<button role="radio" data-silent data-kind="${kind}" data-v="${i + 1}">${label}${i + 1}</button>`).join('')}
+          </div>`).join('')}
         </div>
       </div>
     </div>`;
@@ -43,7 +46,7 @@ export function settingsScreen(root, { store, go }) {
     const s = store.settings;
     root.querySelectorAll('.toggle').forEach(b => b.setAttribute('aria-checked', String(s[b.dataset.key])));
     root.querySelectorAll('[data-theme-mode]').forEach(b => b.setAttribute('aria-checked', String(b.dataset.themeMode === s.theme)));
-    root.querySelectorAll('[data-step]').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.step === getStepVariant())));
+    root.querySelectorAll('[data-kind]').forEach(b => b.setAttribute('aria-checked', String(+b.dataset.v === getSoundVariant(b.dataset.kind))));
   }
 
   root.querySelector('[data-act="back"]').onclick = () => go('#/');
@@ -60,12 +63,12 @@ export function settingsScreen(root, { store, go }) {
   root.querySelectorAll('[data-theme-mode]').forEach(b => {
     b.onclick = () => { store.setSetting('theme', b.dataset.themeMode); applyTheme(b.dataset.themeMode); refresh(); };
   });
-  // 押すと、その案に切り替えて、なぞるときのように3回続けて鳴らす
-  root.querySelectorAll('[data-step]').forEach(b => {
+  // 押すと、その案に切り替えて鳴らす。選んだ案は、遊ぶときにもそのまま使われる
+  root.querySelectorAll('[data-kind]').forEach(b => {
     b.onclick = () => {
-      setStepVariant(+b.dataset.step);
+      setSoundVariant(b.dataset.kind, +b.dataset.v);
       refresh();
-      [0, 110, 220].forEach(ms => setTimeout(() => sound.step(), ms));
+      sound[b.dataset.kind]();
     };
   });
   refresh();
