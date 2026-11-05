@@ -12,6 +12,9 @@
 .bar .logo { grid-column: 1 / 3; font-size: 24px; font-weight: 800; letter-spacing: .08em; }
 
 /* 最初の画面 */
+/* 最初の画面：「ますます」と「設定」は上。2×2のマスのかたまりは、残りの場所の上下のまん中に置く */
+.app.home { min-height: calc(100dvh - env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+.app.home .cards { margin-block: auto; }
 /* 4つのパズルを、アイコンのような2×2の白いマスに並べる(灰色の地の上。地は塗り分けない) */
 .cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .card {
@@ -43,12 +46,15 @@
 html.fixed-screen, html.fixed-screen body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 html.fixed-screen body { position: fixed; inset: 0; }
 html.fixed-screen #app { height: 100%; }
-/* 上のバー・情報・盤面・ボタンは、ひとまとまりにして画面の上下のまん中に置く(余った所は上と下に分かれる) */
+/* 上のバー(もどる・ステージ・一覧)はいちばん上に固定。その下の情報・盤面・ボタンはひとまとまり(.play-main)にして、
+   残りの場所の上下のまん中に置く(余った所は上と下に分かれる) */
 .app.play {
-  height: 100%; gap: 10px; touch-action: none; justify-content: center;
+  height: 100%; gap: 10px; touch-action: none;
   padding-block: 8px max(8px, env(safe-area-inset-bottom, 0px));
 }
 .app.play > * { flex: none; }
+.app.play > .play-main { flex: 1 1 0; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+.play-main > * { flex: none; }
 /* 盤面の場所は、盤面の大きさぴったり。--avail-h は、ほかの部品を除いた残りの高さ(js/ui/play.js が測る) */
 .app.play .board-wrap { container-type: inline-size; display: flex; justify-content: center; }
 /* --bw は盤面の幅(1マスの大きさの計算にも使う)。幅いっぱいか、残りの高さに入る大きさの、小さいほう */

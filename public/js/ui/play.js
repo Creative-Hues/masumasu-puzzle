@@ -1,8 +1,8 @@
 // 遊ぶ画面の枠。4つのパズルで同じ
 // 上：もどる・◀ステージ▶・一覧、盤面の中身・進み具合・ヒントの残り
 // 下：1手戻す・最初から・ヒント、その下に小さく「ルール」(押すと真ん中に説明。パズルごとに初めて開いたときだけ自動で出す)
-// 1画面に収め、スクロールしない。上の情報・盤面・ボタンはひとまとまりにして画面の上下のまん中に置き、
-// 盤面は残りの高さに入るだけ大きくする。クリアすると下から帯
+// 1画面に収め、スクロールしない。上のバーはいちばん上に固定し、情報・盤面・ボタンはひとまとまりにして
+// 残りの場所の上下のまん中に置く。盤面は残りの高さに入るだけ大きくする。クリアすると下から帯
 
 import { stageRng } from '../core/rng.js';
 import { tierOf } from '../core/stages.js';
@@ -23,6 +23,7 @@ export function playScreen(root, { store, go }, entry) {
         </div>
         <button class="text" data-act="list">一覧</button>
       </header>
+      <div class="play-main">
       <div class="info">
         <span class="size"></span><span class="progress"></span><span>ヒント残り<b class="hints-left"></b></span>
       </div>
@@ -45,6 +46,7 @@ export function playScreen(root, { store, go }, entry) {
         <button data-act="hint"></button>
       </div>
       <button class="text rules-btn" data-act="rules">ルール</button>
+      </div>
     </div>
     <div class="modal" hidden>
       <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="rules-title">
@@ -64,14 +66,15 @@ export function playScreen(root, { store, go }, entry) {
   const btn = act => $(`[data-act="${act}"]`);
   const band = $('.band'), confirmBox = $('.confirm'), msg = $('.msg'), modal = $('.modal');
 
-  // 盤面の大きさ：ほかの部品(上のバー・情報・盤面の上下・一言・ボタン・ルール)の高さを測り、残りに入るだけ大きくする
-  // まとまり全体は、CSS で画面の上下のまん中に置く(余った所は上と下に分かれる)
-  const app = $('.app.play'), wrap = $('.board-wrap');
+  // 上のバー(もどる・ステージ・一覧)はいちばん上に固定。その下の部品(情報・盤面の上下・一言・盤面・ボタン・ルール)は
+  // ひとまとまり(.play-main)にして、残りの場所の上下のまん中に置く(CSS)
+  // 盤面の大きさ：まとまりの中のほかの部品の高さを測り、残りに入るだけ大きくする
+  const main = $('.play-main'), wrap = $('.board-wrap');
   function fitBoard() {
-    const cs = getComputedStyle(app);
-    const inner = app.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const cs = getComputedStyle(main);
+    const inner = main.clientHeight;
     const gap = parseFloat(cs.rowGap) || 0;
-    const others = [...app.children].filter(el => el !== wrap && getComputedStyle(el).display !== 'none');
+    const others = [...main.children].filter(el => el !== wrap && getComputedStyle(el).display !== 'none');
     const used = others.reduce((sum, el) => {
       const s = getComputedStyle(el);
       return sum + el.getBoundingClientRect().height + parseFloat(s.marginTop) + parseFloat(s.marginBottom);
@@ -79,8 +82,8 @@ export function playScreen(root, { store, go }, entry) {
     wrap.style.setProperty('--avail-h', Math.max(120, Math.floor(inner - used - 1)) + 'px');
   }
   const fitter = new ResizeObserver(fitBoard);
-  fitter.observe(app);
-  [...app.children].forEach(el => { if (el !== wrap) fitter.observe(el); });
+  fitter.observe(main);
+  [...main.children].forEach(el => { if (el !== wrap) fitter.observe(el); });
 
   let stage = 1, inst = null, hints = createHintCounter(), busy = false, token = 0;
 

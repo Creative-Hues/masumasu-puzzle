@@ -285,8 +285,9 @@ export function isSolved(pz, lines) {
 }
 
 // ヒント：色ごとに、答えの線と最初から同じ所だけ残す。戻した線の本数と、次に光らせる色・マス
-//   光らせるマス(cells)は、次に進む所から次の曲がり角まで(まっすぐ進む分)。交差マスもそのまま数える
-//   線がまだないとき(fromCircle)は、左の円から右へまっすぐ進む分
+//   光らせるマス(cells)は、曲がり角に関係なく、次に進む3マス(残りが3マスより少なければ右の円のとなりまで)
+//   線がまだないとき(fromCircle)は、左の円のとなりのマスから3マス
+export const HINT_CELLS = 3; // 1回のヒントで光らせるマスの数
 export function hintOf(pz, lines) {
   let removed = 0;
   const kept = lines.map((ln, c) => {
@@ -298,11 +299,8 @@ export function hintOf(pz, lines) {
   });
   const c = kept.findIndex((ln, i) => ln.length < pz.paths[i].length);
   if (c < 0) return { kept, removed, next: null };
-  const path = pz.paths[c], k0 = kept[c].length;
-  const dir = k0 === 0 ? 1 : path[k0] - path[k0 - 1]; // 左の円からは右向き
-  const cells = [path[k0]];
-  for (let j = k0 + 1; j < path.length && path[j] - path[j - 1] === dir; j++) cells.push(path[j]);
-  const next = { c, cells, fromCircle: k0 === 0 };
+  const k0 = kept[c].length;
+  const next = { c, cells: pz.paths[c].slice(k0, k0 + HINT_CELLS), fromCircle: k0 === 0 };
   return { kept, removed, next };
 }
 

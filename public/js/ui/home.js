@@ -6,7 +6,7 @@ import { thumbnail } from './thumbs.js';
 
 export function homeScreen(root, { go }) {
   root.innerHTML = `
-    <div class="app">
+    <div class="app home">
       <header class="bar">
         <h1 class="logo">ますます</h1>
         <button class="text" data-act="settings">設定</button>

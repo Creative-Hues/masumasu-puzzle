@@ -234,7 +234,7 @@ export async function start(ctx) {
       c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
       c.lineWidth = Math.max(2, cell * 0.06); c.strokeStyle = ground; c.stroke();
     });
-    // ヒント：次に進む所から曲がり角までのマスを、共通の点線(緑)で囲む(重ねた絵ごと点滅)。線がまだなければ左の円も
+    // ヒント：次に進む3マスを、共通の点線(緑)で囲む(重ねた絵ごと点滅)。線がまだなければ左の円も
     const hc = sizeCanvas(hintCv, W, H);
     if (hint) {
       const hw = L.hintW;

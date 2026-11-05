@@ -70,7 +70,7 @@ test('序盤ほど色マスが多い', () => {
   assert.ok(early > late, `序盤 ${early.toFixed(2)}・61〜 ${late.toFixed(2)}`);
 });
 
-test('ヒント：戻した線は答えと最初から同じで、光らせるのはその線の次のマスから曲がり角まで', () => {
+test('ヒント：戻した線は答えと最初から同じで、光らせるのはその線の次の3マス(残りが少なければ右の円まで)', () => {
   const rand = mulberry32(5);
   for (const s of [1, 30, 50, 70, 90, 110]) {
     const pz = generate(s, stageRng('yotsutsuji', s));
@@ -87,14 +87,9 @@ test('ヒント：戻した線は答えと最初から同じで、光らせる�
       if (h.next) {
         const path = pz.paths[h.next.c], k0 = h.kept[h.next.c].length, cells = h.next.cells;
         assert.equal(h.next.fromCircle, k0 === 0);
-        // 答えの線の次のマスから、続けて並んでいる
-        assert.deepEqual(cells, path.slice(k0, k0 + cells.length));
-        // 全部同じ向き(左の円からは右向き)
-        const dir = k0 === 0 ? 1 : path[k0] - path[k0 - 1];
-        for (let j = 1; j < cells.length; j++) assert.equal(cells[j] - cells[j - 1], dir);
-        // 曲がり角で止まる(その先は曲がるか、線が終わる)
-        const after = k0 + cells.length;
-        assert.ok(after >= path.length || path[after] - path[after - 1] !== dir, '曲がり角の先まで光らせている');
+        // 答えの線の次のマスから3マス(残りが少なければ、右の円のとなりまで)
+        assert.deepEqual(cells, path.slice(k0, k0 + 3));
+        assert.equal(cells.length, Math.min(3, path.length - k0));
       }
     }
   }
@@ -107,11 +102,10 @@ test('交差マスの線の数え方と、絵の具の混ぜ方', () => {
   assert.match(mixColors('#c18690', '#7899ba'), /^#[0-9a-f]{6}$/);
 });
 
-test('ヒント：交差マスも通り抜けて、曲がり角まで光らせる', () => {
-  // 3×3、真ん中が交差マス。1色目は左から右へまっすぐ、2色目は上から下へまっすぐ
+test('ヒント：曲がり角に関係なく3マス。交差マスも数え、残りが少なければ右の円まで', () => {
+  // 3×3、真ん中が交差マス。1色目は左から右へまっすぐ、2色目は上→下へ曲がって進む
   const pz = { n: 3, k: 2, bridges: [4], ends: [5, 8], cp: [], paths: [[3, 4, 5], [0, 1, 4, 7, 8]] };
-  const h = hintOf(pz, [[], []]);
-  assert.deepEqual(h.next, { c: 0, cells: [3, 4, 5], fromCircle: true });
-  const h2 = hintOf(pz, [[3, 4, 5], [0, 1]]);
-  assert.deepEqual(h2.next, { c: 1, cells: [4, 7], fromCircle: false });
+  assert.deepEqual(hintOf(pz, [[], []]).next, { c: 0, cells: [3, 4, 5], fromCircle: true });
+  assert.deepEqual(hintOf(pz, [[3, 4, 5], [0]]).next, { c: 1, cells: [1, 4, 7], fromCircle: false }); // 曲がり角をこえる
+  assert.deepEqual(hintOf(pz, [[3, 4, 5], [0, 1, 4]]).next, { c: 1, cells: [7, 8], fromCircle: false }); // 残り2マス
 });
