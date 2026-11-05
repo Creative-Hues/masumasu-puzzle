@@ -8,6 +8,8 @@ const FILES = [
   'manifest.webmanifest',
   'css/base.css',
   'css/screens.css',
+  'fonts/OFL.txt',
+  'fonts/ZenMaruGothic-Black-masu.woff2',
   'icons/apple-touch-icon.png',
   'icons/icon-192.png',
   'icons/icon-512.png',

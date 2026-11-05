@@ -13,11 +13,23 @@
 /* 最初の画面 */
 /* 最初の画面：「ますます」と「設定」は上。2×2のマスのかたまりは、残りの場所の上下のまん中に置く */
 .app.home { min-height: calc(100dvh - env(safe-area-inset-top, 0px)); padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
-/* 大きな「ますます」と2×2のマスはひとまとまり。「設定」より下の残りの場所の上下のまん中に置く */
-.app.home .home-main { margin-block: auto; display: flex; flex-direction: column; gap: 24px; }
+/* 2×2のマスは「設定」より下の残りの場所の上下のまん中(タイトルを置いても動かさない)。
+   大きな「ますます」は、「設定」と2×2のマスのあいだの空白のまん中に置く(上・マス・下の3段で、上と下を同じ高さにする) */
+.app.home .home-main { flex: 1 1 auto; display: grid; grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr); }
+.app.home .cards { grid-row: 2; }
+/* タイトルだけ Zen Maru Gothic Black。「ま」「す」の2文字だけを取り出した小さなフォント(fonts/。決まりは fonts/OFL.txt) */
+@font-face {
+  font-family: "Masumasu Title"; font-weight: 900; font-display: block;
+  src: url("../fonts/ZenMaruGothic-Black-masu.woff2") format("woff2");
+  unicode-range: U+307E, U+3059;
+}
 /* 大きさは、2×2のマスの横幅の約半分(1文字はマスの横幅の約8分の1) */
 .home-title {
-  margin: 0; text-align: center; line-height: 1.1; font-weight: 800; letter-spacing: .04em;
+  grid-row: 1; align-self: center;
+  /* この段は「設定」の下のすき間(16px)より下から始まるので、「設定」の文字とマスのあいだのまん中になるよう、少し上へ */
+  transform: translateY(-11px);
+  margin: 0; text-align: center; line-height: 1.1; letter-spacing: .04em;
+  font-family: "Masumasu Title", var(--font); font-weight: 900;
   font-size: calc(min(100vw - 32px, 440px) / 8);
 }
 /* 4つのパズルを、アイコンのような2×2の白いマスに並べる(灰色の地の上。地は塗り分けない) */
