@@ -2,22 +2,36 @@
 :root {
   --bg: #f4f5f4; --tile: #ffffff; --ink: #2c3331; --mute: #858d8a; --gap: #e1e4e2;
   --wall: #d3d8d6; --stripe: #b9c0bd; --accent: #3d7f72; --accent-ink: #ffffff; --band: #ffffff;
-  --dot: #8f9794; --danger: #c0605a; --chip: #e9ecea;
+  --dot: #8f9794; --danger: #c0605a; --chip: #e9ecea; --cell: #ffffff;
   --font: "Hiragino Maru Gothic ProN", "Hiragino Maru Gothic Pro", "BIZ UDPGothic", "Yu Gothic UI", "Meiryo", sans-serif;
   color-scheme: light;
+
+  /* 盤面のデザインの決まり(4つのパズルで共通。docs/plan-phase6.md の「7. 決まったこと」)
+     マスは「灰色の地(--bg)に白いマス(--cell)」。大きさの決まりは、1マスの大きさに対する割合 */
+  --cell-gap: 0.07;      /* マスとマスのすき間：マスの7% */
+  --cell-radius: 0.11;   /* マスの角の丸み：マスの11% */
+  --line-ratio: 0.08;    /* まじきりの線の太さ：マスの8% */
+  --top-dot: 10px;       /* 盤面の上に並ぶ丸 */
+  --stripe-width: 3px;   /* 斜線の太さ */
+  --stripe-period: 10px; /* 斜線の間隔 */
+  --hint-dash: 6px;      /* ヒントの点線：線の長さ */
+  --hint-space: 4px;     /* ヒントの点線：すき間 */
+  --hint-width: 3px;     /* ヒントの点線：太さ(色は --accent) */
+  --pale: 0.45;          /* うすい色：地の色(--bg)へ45%近づける */
+  --glow-time: 0.7s;     /* クリアの光り1回の長さ(明るさ1.2倍・あざやかさ1.15倍) */
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg: #1a1d1c; --tile: #2a2f2d; --ink: #e8ecea; --mute: #959e9a; --gap: #222725;
     --wall: #333937; --stripe: #454d4a; --accent: #7cc7b6; --accent-ink: #12201c; --band: #262b29;
-    --dot: #a3aba8; --danger: #e08a84; --chip: #333936;
+    --dot: #a3aba8; --danger: #e08a84; --chip: #333936; --cell: #2e3431;
     color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --bg: #1a1d1c; --tile: #2a2f2d; --ink: #e8ecea; --mute: #959e9a; --gap: #222725;
   --wall: #333937; --stripe: #454d4a; --accent: #7cc7b6; --accent-ink: #12201c; --band: #262b29;
-  --dot: #a3aba8; --danger: #e08a84; --chip: #333936;
+  --dot: #a3aba8; --danger: #e08a84; --chip: #333936; --cell: #2e3431;
   color-scheme: dark;
 }
 

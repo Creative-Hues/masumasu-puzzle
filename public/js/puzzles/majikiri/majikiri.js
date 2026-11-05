@@ -2,6 +2,7 @@
 // 操作：境目の近くをタップ、または指を上下(縦線)・左右(横線)にはらう。触感はタップで線を引いたときだけ
 
 import { configOf, generate, makeCounter, isSolved, badRooms, hintOf } from './logic.js';
+import { look } from '../../ui/look.js';
 
 export const rules = [
   '引きたい境目の近くをタップすると、端から端まで直線が引ける。マスの左右のふちの近くなら縦線、上下のふちの近くなら横線。',
@@ -35,13 +36,13 @@ export function start(ctx) {
 
   // 盤面：マス目と●、その上に線
   const board = ctx.board;
-  board.classList.add('majikiri');
+  board.classList.add('majikiri', 'cells');
   board.style.setProperty('--n', n);
   board.innerHTML = '<div class="mj-grid"></div><div class="mj-lines"></div>';
   const grid = board.querySelector('.mj-grid');
   const layer = board.querySelector('.mj-lines');
   const dots = new Map();
-  const cellSize = () => board.getBoundingClientRect().width / n;
+  const cellSize = () => board.getBoundingClientRect().width / span(); // 1マスの大きさ(px)
   const swipeLimit = () => cellSize() / 3;
 
   for (let i = 0; i < n * n; i++) {
@@ -60,21 +61,27 @@ export function start(ctx) {
     });
   }
 
-  // 指の位置(盤面の中の位置。マスの数で数える)
+  // マスはすき間をはさんで並ぶので、盤面の幅はマス n 個とすき間 n-1 個ぶん(マスの大きさで数えて W)
+  const gapR = () => look().gap;
+  const span = () => n + gapR() * (n - 1);
+  // 境目 p(すき間のまん中)の位置。盤面の幅に対する割合
+  const boundaryPos = p => (p + (p - 0.5) * gapR()) / span();
+  // 指の位置。fx・fy は境目で数えた位置(境目 p がちょうど p)、px・py は盤面の幅に対する割合
   function where(x, y) {
-    const r = board.getBoundingClientRect();
-    return { fx: (x - r.left) / r.width * n, fy: (y - r.top) / r.height * n };
+    const r = board.getBoundingClientRect(), g = gapR(), W = span();
+    const px = (x - r.left) / r.width, py = (y - r.top) / r.height;
+    return { fx: (px * W + g / 2) / (1 + g), fy: (py * W + g / 2) / (1 + g), px: clamp01(px), py: clamp01(py) };
   }
   const nearest = f => Math.min(n - 1, Math.max(1, Math.round(f)));
-  const clamp01 = x => Math.min(1, Math.max(0, x));
+  function clamp01(x) { return Math.min(1, Math.max(0, x)); }
 
   // タップ：いちばん近い縦の境目と横の境目のうち、近いほう
   function lineAt(x, y) {
-    const { fx, fy } = where(x, y);
+    const { fx, fy, px, py } = where(x, y);
     const pv = nearest(fx), ph = nearest(fy);
     return Math.abs(fx - pv) <= Math.abs(fy - ph)
-      ? { d: 'v', p: pv, from: clamp01(fy / n) }
-      : { d: 'h', p: ph, from: clamp01(fx / n) };
+      ? { d: 'v', p: pv, from: py }
+      : { d: 'h', p: ph, from: px };
   }
 
   // はらう：上下なら縦線、左右なら横線を、はらい始めた所にいちばん近い境目に
@@ -86,10 +93,10 @@ export function start(ctx) {
     if (board.closest('[inert]')) return; // 確認などが出ているあいだは受け付けない
     const dx = e.clientX - s.x, dy = e.clientY - s.y;
     if (Math.hypot(dx, dy) <= swipeLimit()) return; // タップは tapCell が受け持つ
-    const { fx, fy } = where(s.x, s.y);
+    const { fx, fy, px, py } = where(s.x, s.y);
     draw(Math.abs(dy) > Math.abs(dx)
-      ? { d: 'v', p: nearest(fx), from: clamp01(fy / n) }
-      : { d: 'h', p: nearest(fy), from: clamp01(fx / n) });
+      ? { d: 'v', p: nearest(fx), from: py }
+      : { d: 'h', p: nearest(fy), from: px });
   }
   function endSwipe() {
     swipe = null;
@@ -144,8 +151,9 @@ export function start(ctx) {
   function lineEl(line) {
     const el = document.createElement('div');
     el.className = 'mj-line ' + line.d;
-    if (line.d === 'h') el.style.top = (line.p / n * 100) + '%';
-    else el.style.left = (line.p / n * 100) + '%';
+    // 線はマスのすき間の上に引く
+    if (line.d === 'h') el.style.top = (boundaryPos(line.p) * 100) + '%';
+    else el.style.left = (boundaryPos(line.p) * 100) + '%';
     return el;
   }
 

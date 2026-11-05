@@ -2,6 +2,7 @@
 // 操作：手持ちのピースをドラッグで置く(タップでは何も起きない)。ドラッグなので震えない
 
 import { configOf, generate, boardsOf, cellsAt, hintOf, LAYOUT_NAME } from './logic.js';
+import { look, pale, hintBox } from '../../ui/look.js';
 
 export const rules = [
   '太い枠の盤面にピースを置くと、境目を鏡にして、ほかの盤面に映る。',
@@ -21,9 +22,11 @@ const LIFT = 28;        // ドラッグ中、ピースを指より上に浮か�
 const DRAG_START = 8;   // これ以上動いたらドラッグ(それより小さいとタップで、何もしない)
 
 const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
-const hexRgb = h => { h = h.replace('#', ''); return [0, 2, 4].map(i => parseInt(h.substr(i, 2), 16)); };
-// 色 a を b に t だけ近づける(最初から置いてあるピースのうすい色)
-const blend = (a, b, t) => '#' + hexRgb(a).map((v, i) => Math.round(v + (hexRgb(b)[i] - v) * t).toString(16).padStart(2, '0')).join('');
+// 1マスぶんの場所 sz の中に描くマスの、まわりの余白と角の丸み(すき間・丸みは共通の決まり)
+function cellBox(sz) {
+  const L = look(), sq = sz / (1 + L.gap);
+  return { g: (sz - sq) / 2, sq, r: sq * L.radius };
+}
 
 function roundRect(c, x, y, w, h, r) {
   c.beginPath();
@@ -32,21 +35,24 @@ function roundRect(c, x, y, w, h, r) {
 }
 // ピースのマス([r,c] の並び)を、つながった1つの形として描く(試作と同じ)
 function drawPieceCells(c, rc, ox, oy, sz, color) {
-  const g = Math.max(1.5, sz * 0.07), key = new Set(rc.map(([r, cc]) => r + ',' + cc));
+  const { g, r: rad } = cellBox(sz), key = new Set(rc.map(([r, cc]) => r + ',' + cc));
   c.fillStyle = color;
   for (const [r, cc] of rc) {
     const x = ox + cc * sz, y = oy + r * sz;
-    roundRect(c, x + g, y + g, sz - 2 * g, sz - 2 * g, sz * 0.16); c.fill();
+    roundRect(c, x + g, y + g, sz - 2 * g, sz - 2 * g, rad); c.fill();
     if (key.has(r + ',' + (cc + 1))) c.fillRect(x + sz * 0.5, y + g, sz, sz - 2 * g);
     if (key.has((r + 1) + ',' + cc)) c.fillRect(x + g, y + sz * 0.5, sz - 2 * g, sz);
     if (key.has(r + ',' + (cc + 1)) && key.has((r + 1) + ',' + cc) && key.has((r + 1) + ',' + (cc + 1))) c.fillRect(x + sz - g - 1, y + sz - g - 1, 2 * g + 2, 2 * g + 2);
   }
 }
-// 点線でマスを囲む(ドラッグ中の形・ヒント)
+// 点線でマスを囲む(ドラッグ中の形はピースの色、ヒントは緑)。点線の形と太さは共通の決まり
 function dashCells(c, cells, n, ox, oy, sz, color) {
-  const g = Math.max(1.5, sz * 0.07);
-  c.save(); c.setLineDash([4, 3]); c.strokeStyle = color; c.lineWidth = 2;
-  for (const x of cells) { roundRect(c, ox + (x % n) * sz + g, oy + Math.floor(x / n) * sz + g, sz - 2 * g, sz - 2 * g, sz * 0.16); c.stroke(); }
+  const L = look(), { g, r } = cellBox(sz), hw = L.hintW;
+  c.save(); c.setLineDash(L.dash); c.strokeStyle = color; c.lineWidth = hw;
+  for (const x of cells) {
+    roundRect(c, ox + (x % n) * sz + g + hw / 2, oy + Math.floor(x / n) * sz + g + hw / 2, sz - 2 * g - hw, sz - 2 * g - hw, Math.max(0, r - hw / 2));
+    c.stroke();
+  }
   c.restore();
 }
 function sizeCanvas(cv, w, h) {
@@ -123,17 +129,18 @@ export function start(ctx) {
   function render() {
     if (!B) return;
     const c = sizeCanvas(main, B * cols, B * rows);
-    const g = Math.max(1.5, cell * 0.07);
-    const tile = css('--tile'), mirrorBg = css('--gap'), placeBg = css('--chip');
+    // 灰色の地に白いマス。置く盤面のマスもほかと同じ白で、見分けは太い枠だけ
+    const L = look(), { g, r: rad } = cellBox(cell);
+    const cellBg = css('--cell');
     for (const b of boards) {
       const [bx, by] = boardXY(b);
       if (b.hidden) {
-        // 斜線のグレーで隠す(のびしろの障害物と同じ色)
+        // 斜線のグレーで隠す(のびしろの障害物と同じ色・太さ・間隔)
         c.save();
-        roundRect(c, bx + g, by + g, B - 2 * g, B - 2 * g, cell * 0.2);
+        roundRect(c, bx + g, by + g, B - 2 * g, B - 2 * g, rad);
         c.fillStyle = css('--wall'); c.fill(); c.clip();
-        c.strokeStyle = css('--stripe'); c.lineWidth = Math.max(2, cell * 0.12);
-        const step = Math.max(9, cell * 0.45);
+        c.strokeStyle = css('--stripe'); c.lineWidth = L.stripeW;
+        const step = L.stripeP * Math.SQRT2; // 斜め45度の線なので、横の間隔は √2 倍
         c.beginPath();
         for (let d = -B; d < B * 2; d += step) { c.moveTo(bx + d, by + B); c.lineTo(bx + d + B, by); }
         c.stroke();
@@ -141,18 +148,19 @@ export function start(ctx) {
         continue;
       }
       for (let r = 0; r < n; r++) for (let cc = 0; cc < n; cc++) {
-        roundRect(c, bx + cc * cell + g, by + r * cell + g, cell - 2 * g, cell - 2 * g, cell * 0.16);
-        c.fillStyle = b.place ? placeBg : mirrorBg; c.fill();
+        roundRect(c, bx + cc * cell + g, by + r * cell + g, cell - 2 * g, cell - 2 * g, rad);
+        c.fillStyle = cellBg; c.fill();
       }
       if (b.place) {
         // 置く盤面：太い枠。置いたピースは何も残らない
         c.strokeStyle = css('--ink'); c.lineWidth = 2.5;
-        roundRect(c, bx + 1.25, by + 1.25, B - 2.5, B - 2.5, cell * 0.2); c.stroke();
+        roundRect(c, bx + 1.25, by + 1.25, B - 2.5, B - 2.5, rad); c.stroke();
       } else {
         placed.forEach(p => {
           const rc = p.cells.map(x => b.map(Math.floor(x / n), x % n));
           const col = colorOf(p.id);
-          drawPieceCells(c, rc, bx, by, cell, pz.pre.includes(p.id) ? blend(col, tile, 0.45) : col);
+          // 最初から置いてあるピースは、うすい色(地の色へ45%近づけた色)
+          drawPieceCells(c, rc, bx, by, cell, pz.pre.includes(p.id) ? pale(col) : col);
         });
       }
     }
@@ -167,9 +175,9 @@ export function start(ctx) {
       c.setLineDash([]); c.fillStyle = css('--mute'); c.beginPath(); c.arc(B, B, 4, 0, Math.PI * 2); c.fill();
     }
     c.restore();
-    // ヒント：置く場所を、ピースと同じ色の点線で(重ねた絵ごと点滅させる)
+    // ヒント：置く場所を、共通の点線(緑)で(重ねた絵ごと点滅させる)
     const hc = sizeCanvas(hintCv, B * cols, B * rows);
-    if (hint) dashCells(hc, hint.cells, n, px, py, cell, colorOf(hint.id));
+    if (hint) dashCells(hc, hint.cells, n, px, py, cell, css('--accent'));
     renderTray();
   }
 
@@ -178,9 +186,11 @@ export function start(ctx) {
       const el = pieceEls[p.id];
       el.hidden = pz.pre.includes(p.id);
       el.classList.toggle('placed', isPlaced(p.id));
-      el.classList.toggle('hint', !!hint && hint.id === p.id);
-      el.style.setProperty('--hc', colorOf(p.id));
       drawShape(el.firstChild, p.shape, TRAY_CELL, colorOf(p.id));
+      // ヒント：手持ちのピースも、共通の点線(緑)で囲む
+      const old = el.querySelector('.hint-box');
+      if (old) old.remove();
+      if (hint && hint.id === p.id) el.appendChild(hintBox(el.offsetWidth, el.offsetHeight, parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0));
     });
     ctx.setProgress(`あと${pz.pieces.length - placed.length}個`);
   }
@@ -282,7 +292,7 @@ export function start(ctx) {
       hint = null;
       render();
       main.classList.remove('glow'); void main.offsetWidth; main.classList.add('glow');
-      return new Promise(res => setTimeout(res, 800));
+      return new Promise(res => setTimeout(res, look().glowMs));
     },
     destroy() {
       if (drag) endDrag();

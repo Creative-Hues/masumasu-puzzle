@@ -4,6 +4,7 @@
 
 import { stageRng } from '../../core/rng.js';
 import { configOf, generate, occupancy, isConnected, isSolved, hintOf, mixColors } from './logic.js';
+import { look, pale } from '../../ui/look.js';
 
 export const rules = [
   '左の円からなぞって、右の円のどれかにつなぐ。',
@@ -57,7 +58,6 @@ function getPuzzle(stage) {
 // ---------- 絵 ----------
 const G = 0.85; // 左右の円の場所の幅(マスいくつぶんか)
 const GY = 0.08; // 上下の余白(マスいくつぶんか)
-const css = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 const reduceMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 function roundRect(c, x, y, w, h, r) {
   c.beginPath();
@@ -145,8 +145,10 @@ export async function start(ctx) {
     now = now || performance.now();
     const c = sizeCanvas(main, W, H);
     const O = occupancy(pz, lines);
-    const cellBg = css('--gap'), peg = css('--stripe'), surface = css('--tile');
-    const pad = Math.max(1.5, cell * 0.05), rad = cell * 0.16, lw = cell * 0.3;
+    // 灰色の地に白いマス(すき間・角の丸みは共通の決まり)。円のふちは地の色で、線と円を見分ける
+    const L = look();
+    const cellBg = L.color('--cell'), peg = L.color('--stripe'), ground = L.color('--bg');
+    const sq = cell / (1 + L.gap), pad = (cell - sq) / 2, rad = sq * L.radius, lw = cell * 0.3;
     for (let i = 0; i < N; i++) {
       const x = gx + (i % n) * cell + pad, y = gy + Math.floor(i / n) * cell + pad, s = cell - pad * 2;
       roundRect(c, x, y, s, s, rad); c.fillStyle = cellBg; c.fill();
@@ -160,7 +162,7 @@ export async function start(ctx) {
           c.globalAlpha = a; roundRect(c, x, y, s, s, rad); c.fillStyle = mixColors(col[O.oH[i]], col[O.oV[i]]); c.fill(); c.globalAlpha = 1;
         }
         const cx = x + s / 2, cy = y + s / 2, arm = s * 0.3, th = Math.max(2, cell * 0.08);
-        c.fillStyle = full ? surface : peg;
+        c.fillStyle = full ? cellBg : peg;
         c.globalAlpha = full ? 0.55 : 1;
         roundRect(c, cx - arm, cy - th / 2, arm * 2, th, th / 2); c.fill();
         roundRect(c, cx - th / 2, cy - arm, th, arm * 2, th / 2); c.fill();
@@ -169,8 +171,8 @@ export async function start(ctx) {
       }
       const cp = pz.cp[i];
       if (cp >= 0) {
-        // 色マス：その色をうすく塗り、ふちを描く
-        c.globalAlpha = 0.38; roundRect(c, x, y, s, s, rad); c.fillStyle = col[cp]; c.fill();
+        // 色マス：その色をうすく(地の色へ45%近づけて)塗り、ふちを描く
+        roundRect(c, x, y, s, s, rad); c.fillStyle = pale(col[cp]); c.fill();
         c.globalAlpha = 0.9; c.lineWidth = Math.max(1.5, cell * 0.04); c.strokeStyle = col[cp];
         roundRect(c, x + c.lineWidth / 2, y + c.lineWidth / 2, s - c.lineWidth, s - c.lineWidth, rad); c.stroke();
         c.globalAlpha = 1;
@@ -200,7 +202,7 @@ export async function start(ctx) {
       const x = gx + (b % n) * cell, y = gy + Math.floor(b / n) * cell, cy = center(b)[1];
       c.save();
       c.beginPath(); c.rect(x + pad, y, cell - pad * 2, cell); c.clip();
-      c.lineCap = 'butt'; c.strokeStyle = surface; c.lineWidth = widthOf(h) + cell * 0.14;
+      c.lineCap = 'butt'; c.strokeStyle = cellBg; c.lineWidth = widthOf(h) + cell * 0.14;
       c.beginPath(); c.moveTo(x, cy); c.lineTo(x + cell, cy); c.stroke();
       c.restore();
       c.save();
@@ -219,7 +221,7 @@ export async function start(ctx) {
     pz.starts.forEach((x, ci) => {
       const [cx, cy] = leftCircle(ci);
       c.fillStyle = col[ci]; c.beginPath(); c.arc(cx, cy, R, 0, Math.PI * 2); c.fill();
-      c.lineWidth = Math.max(2, cell * 0.06); c.strokeStyle = surface; c.stroke();
+      c.lineWidth = Math.max(2, cell * 0.06); c.strokeStyle = ground; c.stroke();
     });
     const endColor = new Array(k).fill(-1);
     lines.forEach((ln, ci) => { if (connected(ci)) endColor[endIndex[ln[ln.length - 1]]] = ci; });
@@ -230,14 +232,15 @@ export async function start(ctx) {
       if (t >= 0 && endColor[j] >= 0) r = R * (1 + 0.28 * Math.sin(t * Math.PI));
       c.fillStyle = endColor[j] >= 0 ? col[endColor[j]] : peg;
       c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
-      c.lineWidth = Math.max(2, cell * 0.06); c.strokeStyle = surface; c.stroke();
+      c.lineWidth = Math.max(2, cell * 0.06); c.strokeStyle = ground; c.stroke();
     });
-    // ヒント：次に進むマスを、その線の色の点線で(重ねた絵ごと点滅)。線がまだなければ左の円も
+    // ヒント：次に進むマスを、共通の点線(緑)で囲む(重ねた絵ごと点滅)。線がまだなければ左の円も
     const hc = sizeCanvas(hintCv, W, H);
     if (hint) {
-      hc.save(); hc.setLineDash([5, 4]); hc.strokeStyle = col[hint.c]; hc.lineWidth = Math.max(2.5, cell * 0.07);
-      const x = gx + (hint.cell % n) * cell + pad * 2, y = gy + Math.floor(hint.cell / n) * cell + pad * 2, s = cell - pad * 4;
-      roundRect(hc, x, y, s, s, rad); hc.stroke();
+      const hw = L.hintW;
+      hc.save(); hc.setLineDash(L.dash); hc.strokeStyle = L.color('--accent'); hc.lineWidth = hw;
+      const x = gx + (hint.cell % n) * cell + pad + hw / 2, y = gy + Math.floor(hint.cell / n) * cell + pad + hw / 2, s = sq - hw;
+      roundRect(hc, x, y, s, s, Math.max(0, rad - hw / 2)); hc.stroke();
       if (hint.fromCircle) {
         const [cx, cy] = leftCircle(hint.c);
         hc.beginPath(); hc.arc(cx, cy, R * 1.45, 0, Math.PI * 2); hc.stroke();
@@ -414,9 +417,9 @@ export async function start(ctx) {
     // 線が光る(少し太くなって戻り、明るくなる)
     glow() {
       hint = null;
-      lines.forEach((ln, ci) => animate({ type: 'flash', key: ci, dur: 700 }));
+      lines.forEach((ln, ci) => animate({ type: 'flash', key: ci, dur: look().glowMs }));
       main.classList.remove('glow'); void main.offsetWidth; main.classList.add('glow');
-      return new Promise(res => setTimeout(res, 750));
+      return new Promise(res => setTimeout(res, look().glowMs));
     },
     destroy() {
       dead = true;

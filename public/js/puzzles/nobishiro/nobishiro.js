@@ -3,6 +3,7 @@
 
 import { stageRng } from '../../core/rng.js';
 import { configOf, generate, spread, stateOf, isFull, hintOf, EMPTY } from './logic.js';
+import { look, hintBox } from '../../ui/look.js';
 
 export const rules = [
   '丸の数だけ、空いたマスに置いて、全部埋めたらクリア。',
@@ -46,13 +47,13 @@ export function start(ctx) {
 
   // 盤面のマスは最初に一度だけ作り、あとは中身だけ書き換える(触感用のスイッチを消さないため)
   const board = ctx.board;
-  board.classList.add('nobishiro');
+  board.classList.add('nobishiro', 'cells');
   board.style.setProperty('--n', n);
   const walls = new Set(pz.walls);
   const cells = [];
   for (let i = 0; i < n * n; i++) {
     const cell = document.createElement('div');
-    cell.className = 'nb-cell' + (walls.has(i) ? ' wall' : '');
+    cell.className = 'nb-cell' + (walls.has(i) ? ' wall stripes' : '');
     const fill = document.createElement('div');
     fill.className = 'nb-fill';
     const num = document.createElement('span');
@@ -85,6 +86,13 @@ export function start(ctx) {
     }
   }
 
+  // ヒント：光らせるマスに、共通の点線の四角を重ねる
+  function showHint(cell, on) {
+    const old = cell.querySelector('.hint-box');
+    if (old) old.remove();
+    if (on) cell.appendChild(hintBox(cell.clientWidth, cell.clientHeight, parseFloat(getComputedStyle(cell).borderTopLeftRadius) || 0));
+  }
+
   // anim：いま置いた色の伸び方(spread の info)。あれば、絵の具がにじむように流す
   function render(anim) {
     const own = now();
@@ -100,7 +108,7 @@ export function start(ctx) {
     own.forEach((v, i) => {
       const { cell, fill, num } = cells[i];
       cell.classList.toggle('empty', v === EMPTY);
-      cell.classList.toggle('hint', i === hintCell);
+      showHint(cell, i === hintCell);
       fill.className = 'nb-fill';
       fill.style.cssText = '';
       if (v >= 0) {
@@ -153,7 +161,8 @@ export function start(ctx) {
           c.classList.add('glow');
         });
       }, k * GLOW_STEP));
-      return new Promise(res => later(res, moves.length * GLOW_STEP + 400));
+      // 1色の光りは共通の長さ(0.7秒)。最後の色が光り終わるまで待つ
+      return new Promise(res => later(res, Math.max(0, moves.length - 1) * GLOW_STEP + look().glowMs + 100));
     },
     destroy() { timers.forEach(clearTimeout); },
   };

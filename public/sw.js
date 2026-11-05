@@ -32,6 +32,7 @@ const FILES = [
   'js/puzzles/yotsutsuji/worker.js',
   'js/puzzles/yotsutsuji/yotsutsuji.js',
   'js/ui/home.js',
+  'js/ui/look.js',
   'js/ui/play.js',
   'js/ui/settings.js',
   'js/ui/stage-list.js',
