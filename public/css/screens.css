@@ -14,11 +14,14 @@
 /* 最初の画面 */
 .cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
 .card {
-  width: 100%; text-align: left; padding: 20px; border-radius: 16px;
-  display: flex; flex-direction: column; gap: 6px;
+  width: 100%; text-align: left; padding: 16px 16px 16px 20px; border-radius: 16px;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
 }
+.card-text { display: flex; flex-direction: column; gap: 6px; }
 .card b { font-size: 20px; letter-spacing: .06em; }
-.card span { font-size: 14px; color: var(--mute); }
+.card-text span { font-size: 14px; color: var(--mute); }
+/* 解いている途中の盤面の小さな絵(js/ui/thumbs.js)。押すのはカード全体 */
+.card .thumb { flex: none; width: 64px; height: 64px; pointer-events: none; }
 
 /* 遊ぶ画面 */
 .stage { display: flex; align-items: center; gap: 4px; }

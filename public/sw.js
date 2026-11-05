@@ -36,6 +36,7 @@ const FILES = [
   'js/ui/play.js',
   'js/ui/settings.js',
   'js/ui/stage-list.js',
+  'js/ui/thumbs.js',
 ];
 const WAIT_MS = 3000; // ネットが遅いときは、この時間で端末のものに切り替える
 
