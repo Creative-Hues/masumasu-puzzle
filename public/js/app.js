@@ -24,9 +24,11 @@ setVolume(settings.volume);
 setHapticsEnabled(settings.haptics);
 applyTheme(settings.theme);
 
+// 画面を移るときは「戻る記録」(履歴)を足さずに今の場所を書き換える。
+// iPhoneは履歴があると左端からのフリックで前の画面に戻ってしまうため。戻るのは「もどる」ボタンだけ
 function go(hash) {
-  if (location.hash === hash) show();
-  else location.hash = hash;
+  if (location.hash !== hash) history.replaceState(null, '', hash);
+  show();
 }
 
 function show() {
