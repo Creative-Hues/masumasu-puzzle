@@ -70,7 +70,7 @@ test('序盤ほど色マスが多い', () => {
   assert.ok(early > late, `序盤 ${early.toFixed(2)}・61〜 ${late.toFixed(2)}`);
 });
 
-test('ヒント：戻した線は答えと最初から同じで、光らせるのはその線の次のマス', () => {
+test('ヒント：戻した線は答えと最初から同じで、光らせるのはその線の次のマスから曲がり角まで', () => {
   const rand = mulberry32(5);
   for (const s of [1, 30, 50, 70, 90, 110]) {
     const pz = generate(s, stageRng('yotsutsuji', s));
@@ -85,8 +85,16 @@ test('ヒント：戻した線は答えと最初から同じで、光らせる�
       h.kept.forEach((ln, c) => assert.deepEqual(ln, pz.paths[c].slice(0, ln.length)));
       assert.equal(h.removed, lines.filter((ln, c) => ln.length !== h.kept[c].length).length);
       if (h.next) {
-        assert.equal(h.next.cell, pz.paths[h.next.c][h.kept[h.next.c].length]);
-        assert.equal(h.next.fromCircle, h.kept[h.next.c].length === 0);
+        const path = pz.paths[h.next.c], k0 = h.kept[h.next.c].length, cells = h.next.cells;
+        assert.equal(h.next.fromCircle, k0 === 0);
+        // 答えの線の次のマスから、続けて並んでいる
+        assert.deepEqual(cells, path.slice(k0, k0 + cells.length));
+        // 全部同じ向き(左の円からは右向き)
+        const dir = k0 === 0 ? 1 : path[k0] - path[k0 - 1];
+        for (let j = 1; j < cells.length; j++) assert.equal(cells[j] - cells[j - 1], dir);
+        // 曲がり角で止まる(その先は曲がるか、線が終わる)
+        const after = k0 + cells.length;
+        assert.ok(after >= path.length || path[after] - path[after - 1] !== dir, '曲がり角の先まで光らせている');
       }
     }
   }
@@ -97,4 +105,13 @@ test('交差マスの線の数え方と、絵の具の混ぜ方', () => {
   const O = occupancy(pz, [[3, 4, 5], [1, 4, 7]]);
   assert.equal(O.oH[4], 0); assert.equal(O.oV[4], 1);
   assert.match(mixColors('#c18690', '#7899ba'), /^#[0-9a-f]{6}$/);
+});
+
+test('ヒント：交差マスも通り抜けて、曲がり角まで光らせる', () => {
+  // 3×3、真ん中が交差マス。1色目は左から右へまっすぐ、2色目は上から下へまっすぐ
+  const pz = { n: 3, k: 2, bridges: [4], ends: [5, 8], cp: [], paths: [[3, 4, 5], [0, 1, 4, 7, 8]] };
+  const h = hintOf(pz, [[], []]);
+  assert.deepEqual(h.next, { c: 0, cells: [3, 4, 5], fromCircle: true });
+  const h2 = hintOf(pz, [[3, 4, 5], [0, 1]]);
+  assert.deepEqual(h2.next, { c: 1, cells: [4, 7], fromCircle: false });
 });

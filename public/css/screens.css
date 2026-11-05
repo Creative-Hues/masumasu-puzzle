@@ -12,16 +12,17 @@
 .bar .logo { grid-column: 1 / 3; font-size: 24px; font-weight: 800; letter-spacing: .08em; }
 
 /* 最初の画面 */
-.cards { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+/* 4つのパズルを、アイコンのような2×2の白いマスに並べる(灰色の地の上。地は塗り分けない) */
+.cards { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .card {
-  width: 100%; text-align: left; padding: 16px 16px 16px 20px; border-radius: 16px;
-  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  width: 100%; aspect-ratio: 1; padding: 12px; border-radius: 16px; background: var(--cell);
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center;
 }
-.card-text { display: flex; flex-direction: column; gap: 6px; }
-.card b { font-size: 20px; letter-spacing: .06em; }
-.card-text span { font-size: 14px; color: var(--mute); }
-/* 解いている途中の盤面の小さな絵(js/ui/thumbs.js)。押すのはカード全体 */
-.card .thumb { flex: none; width: 64px; height: 64px; pointer-events: none; }
+.card-text { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.card b { font-size: 18px; letter-spacing: .06em; }
+.card-text span { font-size: 13px; color: var(--mute); }
+/* 解いている途中の盤面の小さな絵(js/ui/thumbs.js)。マスの幅の約半分。押すのはマス全体 */
+.card .thumb { flex: none; width: 50%; height: auto; aspect-ratio: 1; pointer-events: none; }
 
 /* 遊ぶ画面 */
 .stage { display: flex; align-items: center; gap: 4px; }
@@ -42,18 +43,16 @@
 html.fixed-screen, html.fixed-screen body { height: 100%; overflow: hidden; overscroll-behavior: none; }
 html.fixed-screen body { position: fixed; inset: 0; }
 html.fixed-screen #app { height: 100%; }
+/* 上のバー・情報・盤面・ボタンは、ひとまとまりにして画面の上下のまん中に置く(余った所は上と下に分かれる) */
 .app.play {
-  height: 100%; gap: 10px; touch-action: none;
+  height: 100%; gap: 10px; touch-action: none; justify-content: center;
   padding-block: 8px max(8px, env(safe-area-inset-bottom, 0px));
 }
 .app.play > * { flex: none; }
-/* 盤面は、残りの場所いっぱいの正方形(幅と高さの小さいほう) */
-.app.play .board-wrap {
-  flex: 1 1 0; min-height: 120px; container-type: size;
-  display: flex; align-items: center; justify-content: center;
-}
-/* --bw は盤面の幅(1マスの大きさの計算にも使う) */
-.app.play .board-wrap > .board { --bw: min(100cqw, calc(100cqh * var(--aspect, 1))); width: var(--bw); }
+/* 盤面の場所は、盤面の大きさぴったり。--avail-h は、ほかの部品を除いた残りの高さ(js/ui/play.js が測る) */
+.app.play .board-wrap { container-type: inline-size; display: flex; justify-content: center; }
+/* --bw は盤面の幅(1マスの大きさの計算にも使う)。幅いっぱいか、残りの高さに入る大きさの、小さいほう */
+.app.play .board-wrap > .board { --bw: min(100cqw, calc(var(--avail-h, 300px) * var(--aspect, 1))); width: var(--bw); }
 /* 確認・ルール・クリアの帯が出ているあいだは、盤面が指を受け付けない(js/ui/play.js) */
 .board[inert] { pointer-events: none; }
 

@@ -11,6 +11,12 @@ export const rules = [
   '決まった本数の縦線と横線で、部屋の●の数が上の組み合わせとぴったり同じになるように分けたらクリア。',
 ];
 
+// ヒントの回数：線の本数−1(上限3回)。1〜20は1回、21〜40は2回、41〜は3回
+export function hintLimit(stage) {
+  const c = configOf(stage);
+  return Math.min(3, c.v + c.h - 1);
+}
+
 export function describe(stage) {
   const c = configOf(stage);
   return `${c.n}×${c.n}・縦${c.v}本・横${c.h}本`;

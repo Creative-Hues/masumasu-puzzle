@@ -61,3 +61,8 @@ test('ヒント：間違った線を除き、答えの線を1本返す', () => {
   assert.deepEqual(r.next, { d: 'h', p: 4 });
   assert.deepEqual(hintOf(pz, [{ d: 'h', p: 2 }, { d: 'h', p: 4 }]).next, { d: 'v', p: 3 });
 });
+
+test('ヒントの回数は「線の本数−1」(上限3回)', async () => {
+  const { hintLimit } = await import('../public/js/puzzles/majikiri/majikiri.js');
+  assert.deepEqual([1, 20, 21, 40, 41, 101, 500].map(hintLimit), [1, 1, 2, 2, 3, 3, 3]);
+});

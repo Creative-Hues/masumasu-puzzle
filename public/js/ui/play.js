@@ -1,7 +1,8 @@
 // 遊ぶ画面の枠。4つのパズルで同じ
 // 上：もどる・◀ステージ▶・一覧、盤面の中身・進み具合・ヒントの残り
 // 下：1手戻す・最初から・ヒント、その下に小さく「ルール」(押すと真ん中に説明。パズルごとに初めて開いたときだけ自動で出す)
-// 1画面に収め、スクロールしない。盤面は残りの場所いっぱいの正方形。クリアすると下から帯
+// 1画面に収め、スクロールしない。上の情報・盤面・ボタンはひとまとまりにして画面の上下のまん中に置き、
+// 盤面は残りの高さに入るだけ大きくする。クリアすると下から帯
 
 import { stageRng } from '../core/rng.js';
 import { tierOf } from '../core/stages.js';
@@ -63,6 +64,24 @@ export function playScreen(root, { store, go }, entry) {
   const btn = act => $(`[data-act="${act}"]`);
   const band = $('.band'), confirmBox = $('.confirm'), msg = $('.msg'), modal = $('.modal');
 
+  // 盤面の大きさ：ほかの部品(上のバー・情報・盤面の上下・一言・ボタン・ルール)の高さを測り、残りに入るだけ大きくする
+  // まとまり全体は、CSS で画面の上下のまん中に置く(余った所は上と下に分かれる)
+  const app = $('.app.play'), wrap = $('.board-wrap');
+  function fitBoard() {
+    const cs = getComputedStyle(app);
+    const inner = app.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
+    const gap = parseFloat(cs.rowGap) || 0;
+    const others = [...app.children].filter(el => el !== wrap && getComputedStyle(el).display !== 'none');
+    const used = others.reduce((sum, el) => {
+      const s = getComputedStyle(el);
+      return sum + el.getBoundingClientRect().height + parseFloat(s.marginTop) + parseFloat(s.marginBottom);
+    }, 0) + gap * others.length;
+    wrap.style.setProperty('--avail-h', Math.max(120, Math.floor(inner - used - 1)) + 'px');
+  }
+  const fitter = new ResizeObserver(fitBoard);
+  fitter.observe(app);
+  [...app.children].forEach(el => { if (el !== wrap) fitter.observe(el); });
+
   let stage = 1, inst = null, hints = createHintCounter(), busy = false, token = 0;
 
   // 確認・ルール・クリアの帯が出ているあいだ(と、クリアの光り方のあいだ)は、盤面とその上下の場所が指を受け付けない
@@ -100,7 +119,7 @@ export function playScreen(root, { store, go }, entry) {
     inst = null;
     stage = s;
     busy = false;
-    hints = createHintCounter();
+    hints = createHintCounter(entry.game.hintLimit ? entry.game.hintLimit(s) : undefined); // 決めていなければ3回
     store.setCurrent(entry.id, s);
     band.classList.remove('show');
     confirmBox.hidden = true;
@@ -173,5 +192,6 @@ export function playScreen(root, { store, go }, entry) {
   load(store.progress(entry.id).current);
   // パズルごとに、初めて開いたときだけ自動で出す
   if (!store.hasSeenRules(entry.id)) { modal.hidden = false; store.markRulesSeen(entry.id); refresh(); }
-  return () => { token++; clearTimeout(unblockTimer); if (inst && inst.destroy) inst.destroy(); };
+  fitBoard();
+  return () => { token++; clearTimeout(unblockTimer); fitter.disconnect(); if (inst && inst.destroy) inst.destroy(); };
 }

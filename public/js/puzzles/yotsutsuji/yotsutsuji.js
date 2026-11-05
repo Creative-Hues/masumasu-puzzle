@@ -234,13 +234,15 @@ export async function start(ctx) {
       c.beginPath(); c.arc(cx, cy, r, 0, Math.PI * 2); c.fill();
       c.lineWidth = Math.max(2, cell * 0.06); c.strokeStyle = ground; c.stroke();
     });
-    // ヒント：次に進むマスを、共通の点線(緑)で囲む(重ねた絵ごと点滅)。線がまだなければ左の円も
+    // ヒント：次に進む所から曲がり角までのマスを、共通の点線(緑)で囲む(重ねた絵ごと点滅)。線がまだなければ左の円も
     const hc = sizeCanvas(hintCv, W, H);
     if (hint) {
       const hw = L.hintW;
       hc.save(); hc.setLineDash(L.dash); hc.strokeStyle = L.color('--accent'); hc.lineWidth = hw;
-      const x = gx + (hint.cell % n) * cell + pad + hw / 2, y = gy + Math.floor(hint.cell / n) * cell + pad + hw / 2, s = sq - hw;
-      roundRect(hc, x, y, s, s, Math.max(0, rad - hw / 2)); hc.stroke();
+      hint.cells.forEach(i => {
+        const x = gx + (i % n) * cell + pad + hw / 2, y = gy + Math.floor(i / n) * cell + pad + hw / 2, s = sq - hw;
+        roundRect(hc, x, y, s, s, Math.max(0, rad - hw / 2)); hc.stroke();
+      });
       if (hint.fromCircle) {
         const [cx, cy] = leftCircle(hint.c);
         hc.beginPath(); hc.arc(cx, cy, R * 1.45, 0, Math.PI * 2); hc.stroke();
