@@ -46,6 +46,20 @@ export function normalize(raw) {
   return d;
 }
 
+// ---------- バックアップ(書き出し・読み込み) ----------
+// 書き出すファイルの中身：ますますのバックアップの印・保存の形の版・書き出した日と、保存しているもの全部
+// (4つのパズルの進み具合・設定・ルールを出したパズル)
+export const BACKUP_APP = 'masumasu';
+
+// 読み込んだ文字を確かめ、使える形に直して返す。ますますのファイルでない・壊れているときは null
+export function parseBackup(text) {
+  let raw;
+  try { raw = JSON.parse(text); } catch (e) { return null; }
+  if (!raw || typeof raw !== 'object' || raw.app !== BACKUP_APP) return null;
+  if (!raw.data || typeof raw.data !== 'object') return null;
+  return normalize(raw.data); // 古い版のファイルも、使える形に直して読む
+}
+
 export function createStore(backend) {
   let data;
   try { data = normalize(JSON.parse(backend.get(STORE_KEY) || 'null')); } catch (e) { data = blank(); }
@@ -54,6 +68,13 @@ export function createStore(backend) {
 
   return {
     get settings() { return { ...data.settings }; },
+
+    // 書き出す文字(ファイルの中身)
+    exportBackup(now = new Date()) {
+      return JSON.stringify({ app: BACKUP_APP, v: STORE_VERSION, exportedAt: now.toISOString(), data }, null, 2);
+    },
+    // 読み込んだもので全部置き換える(parseBackup で確かめたもの)
+    replaceWith(next) { data = normalize(next); save(); },
     setSetting(key, value) { data.settings[key] = value; save(); },
 
     progress(id) { const p = prog(id); return { ...p, skipped: [...p.skipped] }; },

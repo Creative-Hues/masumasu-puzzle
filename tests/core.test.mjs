@@ -5,7 +5,7 @@ import { stageRng } from '../public/js/core/rng.js';
 import { tierOf } from '../public/js/core/stages.js';
 import { THEMES, themeFor } from '../public/js/core/palettes.js';
 import { createHintCounter } from '../public/js/core/hints.js';
-import { createStore, STORE_KEY } from '../public/js/core/storage.js';
+import { createStore, STORE_KEY, parseBackup } from '../public/js/core/storage.js';
 
 const take = (rng, n) => Array.from({ length: n }, rng);
 
@@ -129,4 +129,37 @@ test('保存：音量を覚え、おかしな値は使わない', () => {
   for (const bad of [-1, 2, '0.5', null]) {
     assert.equal(createStore(memory(JSON.stringify({ settings: { volume: bad } }))).settings.volume, 0.7);
   }
+});
+
+test('バックアップ：書き出したものを読み込むと、元と同じ進み具合・設定になる', () => {
+  const a = createStore(memory());
+  a.markCleared('nobishiro', 1); a.markSkipped('nobishiro', 2); a.setCurrent('nobishiro', 3);
+  a.markCleared('majikiri', 1);
+  a.setSetting('sound', false); a.setSetting('volume', 0.4); a.setSetting('haptics', false); a.setSetting('theme', 'dark');
+  a.markRulesSeen('yotsutsuji');
+  const text = a.exportBackup(new Date('2026-11-05T09:00:00Z'));
+  const file = JSON.parse(text);
+  assert.equal(file.app, 'masumasu');
+  assert.equal(file.exportedAt, '2026-11-05T09:00:00.000Z');
+  const parsed = parseBackup(text);
+  assert.ok(parsed);
+  const b = createStore(memory());
+  b.markCleared('utsushie', 1); // 置き換えると消える
+  b.replaceWith(parsed);
+  assert.equal(b.exportBackup(new Date('2026-11-05T09:00:00Z')), text); // 書き出し直しても同じ中身
+  assert.deepEqual(b.progress('nobishiro'), { maxCleared: 2, current: 3, skipped: [2] });
+  assert.deepEqual(b.progress('majikiri'), { maxCleared: 1, current: 1, skipped: [] });
+  assert.deepEqual(b.progress('utsushie'), { maxCleared: 0, current: 1, skipped: [] });
+  assert.deepEqual(b.settings, { sound: false, haptics: false, theme: 'dark', volume: 0.4 });
+  assert.equal(b.hasSeenRules('yotsutsuji'), true);
+});
+
+test('バックアップ：ちがうファイル・壊れたファイルは読み込まない。古い版は読める', () => {
+  for (const bad of ['', 'こわれた', '42', 'null', '{""app"":""other"",""data"":{}}', '{""app"":""masumasu""}', '{""app"":""masumasu"",""data"":5}']) {
+    assert.equal(parseBackup(bad), null, bad);
+  }
+  const old = parseBackup(JSON.stringify({ app: 'masumasu', data: { settings: { sound: false }, puzzles: { majikiri: { maxCleared: 4, current: 2 } } } }));
+  assert.equal(old.settings.sound, false);
+  assert.equal(old.settings.volume, 0.7);
+  assert.deepEqual(old.puzzles.majikiri, { maxCleared: 4, current: 2, skipped: [] });
 });

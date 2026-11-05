@@ -218,3 +218,9 @@ html.fixed-screen #app { height: 100%; }
 /* 音量のつまみ */
 .settings .row.volume input { flex: 1; max-width: 220px; accent-color: var(--accent); touch-action: pan-x; }
 .settings .row.volume input:disabled { opacity: .35; }
+/* バックアップ・確認の2つ並びのボタン */
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.settings .pair button { background: var(--bg); }
+.backup-msg { margin: 0; font-size: 13px; color: var(--danger); min-height: 1.2em; }
+.backup-msg:empty { display: none; }
+.modal-box p { margin: 0; font-size: 16px; line-height: 1.6; }
