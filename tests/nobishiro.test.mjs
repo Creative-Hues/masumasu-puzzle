@@ -63,8 +63,8 @@ test('1個少ないと埋まらない(1〜80は全部、81〜は抜き出して�
   }
 });
 
-test('301〜は、101〜300の問題を回したり裏返したりしたもので、元とは見た目がちがう', () => {
-  const a = generate(101), b = generate(301);
+test('301〜は、121〜300の問題を回したり裏返したりしたもので、元とは見た目がちがう', () => {
+  const a = generate(121), b = generate(301);
   assert.notDeepEqual(a.walls, b.walls);
   assert.equal(a.limit, b.limit);
 });

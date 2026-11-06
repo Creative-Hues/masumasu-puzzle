@@ -70,9 +70,9 @@ export const isFull = board => !board.includes(EMPTY);
 
 // 問題は、あらかじめ tools/make-nobishiro-stages.mjs で作ってある(stages.js)
 // スマホで作ると、後半の盤面は「ぴったりの数でないと埋まらない」ことを確かめるのに時間がかかりすぎるため
-// 301〜は、101〜300 の問題を回したり裏返したりして使う(置ける数は変わらない)
+// 301〜は、121〜300 の問題(どれも置ける数9個)を回したり裏返したりして使う(置ける数は変わらない)
 export const MADE_STAGES = 300;
-const LOOP_FROM = 101;
+const LOOP_FROM = 121;
 
 // 盤面を回す・裏返す(8通り)。k=0 はそのまま
 function transform(n, i, k) {
@@ -136,7 +136,7 @@ export function makePuzzle(stage, rng, budget = 60000) {
 
 // 残り rem 個で全部埋めきれるかを調べる道具。調べた結果は覚えておき、ヒントの中で使い回す
 // 調べる数が budget を超えたら TOO_MANY を投げる(時間がかかりすぎないように)
-const BUDGET = 8000;
+const BUDGET = 2500;
 const TOO_MANY = { tooMany: true };
 
 function makeSearcher(n, budget) {
