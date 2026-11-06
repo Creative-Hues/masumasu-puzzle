@@ -2,18 +2,24 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { stageRng, mulberry32, randInt } from '../public/js/core/rng.js';
-import { configOf, generate, spread, baseBoard, stateOf, isFull, findNext, hintOf, WALL, EMPTY } from '../public/js/puzzles/nobishiro/logic.js';
+import { configOf, limitOf, generate, spread, baseBoard, stateOf, isFull, findNext, hintOf, WALL, EMPTY, MADE_STAGES } from '../public/js/puzzles/nobishiro/logic.js';
 
 test('難易度表のとおり', () => {
-  const t = s => { const c = configOf(s); return `${c.n} ${c.lo}-${c.hi} ${c.walls}`; };
-  assert.equal(t(1), '5 3-4 4');
-  assert.equal(t(20), '5 3-4 4');
-  assert.equal(t(21), '6 4-5 6');
-  assert.equal(t(41), '6 5-6 6');
-  assert.equal(t(61), '7 5-7 8');
-  assert.equal(t(81), '7 6-8 8');
-  assert.equal(t(101), '8 7-10 10');
-  assert.equal(t(500), '8 7-10 10');
+  const t = s => { const c = configOf(s); return `${c.n} ${c.walls} ${c.limit}`; };
+  assert.equal(t(1), '5 4 4');
+  assert.equal(t(10), '5 4 4');
+  assert.equal(t(11), '5 4 5');
+  assert.equal(t(21), '6 6 5');
+  assert.equal(t(41), '6 6 6');
+  assert.equal(t(61), '7 8 7');
+  assert.equal(t(81), '7 8 8');
+  assert.equal(t(101), '8 10 8');
+  assert.equal(t(121), '8 10 9');
+  assert.equal(t(1000), '8 10 9');
+});
+
+test('置ける数は、ステージが進んでも減らない', () => {
+  for (let s = 2; s <= 1000; s++) assert.ok(limitOf(s) >= limitOf(s - 1), `ステージ${s}で減った`);
 });
 
 test('伸び方：壁・障害物・先に伸びた色で止まる', () => {
@@ -28,33 +34,50 @@ test('伸び方：壁・障害物・先に伸びた色で止まる', () => {
   assert.deepEqual(second.out, [1, 0, EMPTY, 0, 0, WALL, EMPTY, 0, EMPTY]);
 });
 
-test('ステージ1〜300：作れて、障害物の数・置ける数が表どおり、答えの置き方で全部埋まる', () => {
-  let slowest = 0, slowStage = 0;
-  for (let s = 1; s <= 300; s++) {
-    const t0 = performance.now();
-    const pz = generate(s, stageRng('nobishiro', s));
-    const ms = performance.now() - t0;
-    if (ms > slowest) { slowest = ms; slowStage = s; }
+// 置ける数ぴったりで埋まる置き方があるか、1個少ないと埋まらないか
+const fillsWith = (pz, rem) => findNext(pz.n, baseBoard(pz.n, pz.walls), rem, 5e6);
+
+test(`ステージ1〜${MADE_STAGES}と、その先：障害物の数・置ける数が表どおり、答えの置き方でちょうど埋まる`, () => {
+  const stages = [];
+  for (let s = 1; s <= MADE_STAGES; s++) stages.push(s);
+  stages.push(301, 302, 450, 501, 777, 1000);
+  for (const s of stages) {
+    const pz = generate(s);
     const c = configOf(s);
+    assert.equal(pz.n, c.n, `ステージ${s}：盤面`);
     assert.equal(pz.walls.length, c.walls, `ステージ${s}：障害物`);
-    assert.ok(pz.limit >= c.lo && pz.limit <= c.hi, `ステージ${s}：置ける数 ${pz.limit}`);
+    assert.equal(new Set(pz.walls).size, c.walls, `ステージ${s}：障害物が重なっている`);
+    assert.equal(pz.limit, c.limit, `ステージ${s}：置ける数`);
     assert.equal(pz.sol.length, pz.limit);
     assert.ok(isFull(stateOf(pz, pz.sol)), `ステージ${s}：答えで埋まらない`);
   }
-  console.log(`いちばん時間がかかった問題：ステージ${slowStage}・${slowest.toFixed(1)}ms`);
-  // ほかの確かめと同時に動くとPCが混んで遅くなるので、上限は目安(0.1秒)より広めにとり、大きく遅くなったときだけ知らせる
-  assert.ok(slowest < 250, `1問に${slowest.toFixed(0)}msかかった`);
+});
+
+test('1個少ないと埋まらない(1〜80は全部、81〜は抜き出して確かめる)', () => {
+  const stages = [];
+  for (let s = 1; s <= 80; s++) stages.push(s);
+  stages.push(81, 100, 101, 120, 121, 301);
+  for (const s of stages) {
+    const pz = generate(s);
+    assert.equal(fillsWith(pz, pz.limit - 1), -1, `ステージ${s}：${pz.limit - 1}個で埋まってしまう`);
+  }
+});
+
+test('301〜は、101〜300の問題を回したり裏返したりしたもので、元とは見た目がちがう', () => {
+  const a = generate(101), b = generate(301);
+  assert.notDeepEqual(a.walls, b.walls);
+  assert.equal(a.limit, b.limit);
 });
 
 test('同じステージ番号なら同じ問題', () => {
-  assert.deepEqual(generate(77, stageRng('nobishiro', 77)), generate(77, stageRng('nobishiro', 77)));
+  assert.deepEqual(generate(77), generate(77));
 });
 
 test('ヒント：埋めきれない手を戻し、光らせた場所に置けば残りの数で埋めきれる(8×8も)', () => {
   const rand = mulberry32(12345);
   let slowest = 0;
   for (const s of [1, 5, 25, 45, 65, 85, 101, 120, 150, 199]) {
-    const pz = generate(s, stageRng('nobishiro', s));
+    const pz = generate(s);
     for (let round = 0; round < 5; round++) {
       // でたらめに何手か置く
       let b = baseBoard(pz.n, pz.walls);
@@ -83,7 +106,7 @@ test('ヒント：埋めきれない手を戻し、光らせた場所に置け�
 });
 
 test('ヒント：答えの置き方と同じ順番なら、答えの次の1手', () => {
-  const pz = generate(3, stageRng('nobishiro', 3));
+  const pz = generate(3);
   assert.deepEqual(hintOf(pz, pz.sol.slice(0, 1)), { kept: pz.sol.slice(0, 1), removed: 0, next: pz.sol[1] });
   assert.deepEqual(hintOf(pz, []), { kept: [], removed: 0, next: pz.sol[0] });
 });

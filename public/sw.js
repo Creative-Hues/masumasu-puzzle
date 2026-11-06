@@ -2,7 +2,7 @@
 // 開くときは、まずネットから新しいものを取りに行き、取れなければ(機内モードなど)端末にしまったものを使う
 // ファイルを足したら FILES にも足すこと(tests/sw.test.mjs が確かめる)
 
-const CACHE = 'masumasu-v1';
+const CACHE = 'masumasu-v2';
 const FILES = [
   './',
   'manifest.webmanifest',
@@ -27,6 +27,7 @@ const FILES = [
   'js/puzzles/majikiri/majikiri.js',
   'js/puzzles/nobishiro/logic.js',
   'js/puzzles/nobishiro/nobishiro.js',
+  'js/puzzles/nobishiro/stages.js',
   'js/puzzles/registry.js',
   'js/puzzles/utsushie/logic.js',
   'js/puzzles/utsushie/utsushie.js',
